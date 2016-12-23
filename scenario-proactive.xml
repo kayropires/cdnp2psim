@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- <community tiers="2" size="1000"> -->
+<community tiers="1" size="5">
+<!-- Grupo de pares que acessam playlists, removido -->
+<!--	<tier size="200">
+		<search>
+			<policy>
+				<parameter name="dynamic">SEARCH:FLOADING</parameter>
+				<parameter name="maxLevels">4</parameter>
+			</policy>	
+		</search>
+		<peer>
+			<cache>
+				<parameter name="size">10800</parameter>
+				<policy>
+					<parameter name="dynamic">OMP:GDSA</parameter>
+				</policy>
+			</cache>
+			<profile>
+				<parameter name="dynamic">PROFILE:JACCARD</parameter>
+				<parameter name="alpha">0.5</parameter>
+			</profile>
+			<topology>	
+				<parameter name="maxConnections">30</parameter>
+				<parameter name="maxAttempts">10</parameter>
+				<manager>
+					<parameter name="dynamic">TOPOLOGY:PROACTIVE</parameter>
+				</manager>
+			</topology>	
+			
+			<channel>	
+				<parameter name="capacity">768</parameter>
+				<parameter name="rateUplink">512</parameter>
+
+			</channel>		
+			<churn>
+				<join>
+					<parameter name="dynamic">SESSIONLASTING:PLAYLIST</parameter> 
+					<pick>
+						<parameter name="dynamic">RANDOM:TRUNCATEDGEOMETRICSINGLETON</parameter>
+						<parameter name="alpha">0.2</parameter>
+					</pick>	 
+				</join>
+				<leave>
+					<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
+					<pick>
+						<parameter name="dynamic">RANDOM:EXPONENTIALSINGLETON</parameter>
+						<parameter name="mean">43200</parameter>
+					</pick>	
+				</leave>
+			</churn>
+			<content>
+				<request>
+					<parameter name="dynamic">RANDOM:CONSTANT</parameter>
+					<parameter name="mean">0</parameter>
+				</request>
+				<datasource>
+					<parameter name="dynamic">DATASOURCE:PLAYLIST</parameter>
+					<prefetch>
+						<parameter name="dynamic">PREFETCH:NEXTFROMPLAYLIST</parameter>
+						<parameter name="fraction">0.3</parameter>
+					</prefetch>
+					<access>
+						<parameter name="dynamic">RANDOM:FROMFILESINGLETON</parameter>
+						<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/PadraoAcesso_Playlist_Entretenimento_Agosto2012.out</parameter>
+					</access>
+					<catalog>
+						<parameter name="dynamic">DATACATALOG:FROMPLAYLISTSINGLETON</parameter>
+						<parameter name="setlist">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/PlaylistsEntretenimento_Agosto2012.txt</parameter>
+						<parameter name="collection">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/ColecaoVideos_Playlist_Entretenimento_Agosto2012.txt</parameter>
+						<parameter name="length">11614</parameter>
+					</catalog>
+				</datasource>
+			</content>
+		</peer>
+	</tier>
+	-->
+	<!-- Fim do grupo de pares que acessam playlists -->
+	
+	<tier size="5">	
+		<search>	
+			<policy>
+				<parameter name="dynamic">SEARCH:NEIGHBORHOOD</parameter>
+				<parameter name="maxLevels">1</parameter>
+			</policy>	
+		</search>
+		
+		<fluctuation>
+			<policy>
+				<parameter name="dynamic">FLUCTUATION:FROMFILE</parameter>
+				<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/fluctuation.txt</parameter>
+			</policy>	
+		</fluctuation>
+		
+		<peer>
+
+			<caches levels="3">
+				<cache>
+					<parameter name="size">6200</parameter>
+					<policy>
+						<parameter name="dynamic">OMP:LRU</parameter>
+					</policy>
+				</cache>
+				<cache>
+					<parameter name="size">7200</parameter>
+					<policy>
+						<parameter name="dynamic">OMP:FIFO</parameter>
+					</policy>
+				</cache>
+				<cache>
+					<parameter name="size">20</parameter>
+					<policy>
+						<parameter name="dynamic">OMP:FIFO</parameter>
+					</policy>
+				</cache>
+			
+			</caches>
+			
+			<player>
+				<parameter name="sizeWindow">10</parameter>
+				<policy>
+					<parameter name="dynamic">SP:GREEDY</parameter>
+				</policy>
+			</player>
+			
+			
+			
+			
+			<profile>
+				<parameter name="dynamic">PROFILE:JACCARD</parameter>
+				<!-- parameter name="alpha"></parameter -->
+			</profile>
+			<topology>
+				<parameter name="maxConnections">30</parameter>
+				<parameter name="maxAttempts">10</parameter>
+				<manager>
+					<parameter name="dynamic">TOPOLOGY:RANDOM</parameter>
+				</manager>
+			</topology>
+			<!-- Canal -->
+			<channel>	
+				<parameter name="capacity">768</parameter>
+
+				<uplink>
+					<parameter name="rateUplink">512</parameter>
+					<throughput>
+						<parameter name="dynamic">THROUGHPUT:FROMFILE</parameter>
+						<parameter name="limsup">5</parameter>
+						<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/uplink.txt</parameter>
+					</throughput>
+				</uplink>
+				<downlink>
+					<parameter name="rateDownlink">256</parameter>
+					<throughput>
+						<parameter name="dynamic">THROUGHPUT:FROMFILE</parameter>
+						<parameter name="limsup">5</parameter>
+						<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/downlink.txt</parameter>
+					</throughput>
+				</downlink>
+			</channel>		
+			<churn>
+				<join>
+					<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
+					<pick>
+						<parameter name="dynamic">RANDOM:CONSTANT</parameter>
+						<parameter name="value">6125</parameter>
+					</pick>
+				</join>
+				<leave>
+				<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
+					<pick>
+						<parameter name="dynamic">RANDOM:CONSTANT</parameter>
+						<parameter name="value">0</parameter>
+					</pick>	
+				</leave>
+			</churn>
+			<content>
+				<request>
+					<parameter name="dynamic">RANDOM:EXPONENTIALSINGLETON</parameter>
+					<parameter name="mean">30</parameter>
+				</request>
+				<datasource>
+					<parameter name="dynamic">DATASOURCE:COLLECTION</parameter>
+					<prefetch>
+						<parameter name="dynamic">PREFETCH:NONE</parameter>
+					</prefetch>
+					<replicate>
+						<parameter name="dynamic">REPLICATE:RANDOM</parameter>
+						<parameter name="bfraction">0.5</parameter>
+						<parameter name="swindow">512</parameter>
+					</replicate>
+					<access>
+						<parameter name="dynamic">RANDOM:FROMFILESINGLETON</parameter>
+						<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/Padrao_Acesso_ColecaoYouTubeEntretenimento.out</parameter>
+					</access>
+					<catalog>
+						<parameter name="dynamic">DATACATALOG:FROMCOLLECTIONSINGLETON</parameter>
+						<parameter name="collection">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/ColecaoYoutube_Entretenimento.txt</parameter>
+						<parameter name="length">6134</parameter>
+					</catalog>
+				</datasource>
+			</content>
+		</peer>
+	</tier>
+</community>
