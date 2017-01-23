@@ -121,6 +121,14 @@ static void* initDataCatalogSymTable(TDictionary* d){
 	sprintf(sym->pars,"collection;length");
 	d->insert(d,key,sym);
 
+	//@ 03/01/2017
+	sym = malloc(sizeof(TDataCreateSymTable));
+	key = d->keyGenesis("DATACATALOG:FROMCOLLECTIONSINGLETONADAPTIVE");
+	sym->create= (TCreateSymTable)createFromCollectionSingletonAdaptiveDataCatalog;
+	sprintf(sym->pars,"collection;length");
+	d->insert(d,key,sym);
+
+
 	sym = malloc(sizeof(TDataCreateSymTable));
 	key = d->keyGenesis("DATACATALOG:FROMPLAYLIST");
 	sym->create= (TCreateSymTable)createFromPlaylistDataCatalog;

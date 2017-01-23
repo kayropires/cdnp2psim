@@ -20,6 +20,7 @@ typedef void(* TDisposeDataCatalog)(TDataCatalog *_dataCatalog);
 struct _dataCatalog{
 	void *data;
 	void *dynamic;
+	void *dynamicAdaptive;
 	TDisposeDataCatalog dispose;
 };
 
@@ -32,6 +33,10 @@ typedef TDataCatalog *(* TCreateDataCatalog)(TParsDataCatalog *pars);
 TDataCatalog *createFromCollectionDataCatalog(TParsDataCatalog *pars);
 TDataCatalog *createFromCollectionSingletonDataCatalog(TParsDataCatalog *pars);
 void disposeFromCollectionDataCatalog(TDataCatalog *dataCatalog);
+
+TDataCatalog *createFromCollectionAdaptiveDataCatalog(TParsDataCatalog *pars);
+TDataCatalog *createFromCollectionSingletonAdaptiveDataCatalog(TParsDataCatalog *pars);
+void disposeFromCollectionAdaptiveDataCatalog(TDataCatalog *dataCatalog);
 
 TDataCatalog *createFromPlaylistDataCatalog(TParsDataCatalog *pars);
 void disposeFromPlaylistDataCatalog(TDataCatalog *dataCatalog);
@@ -52,6 +57,7 @@ void disposeLogDataSource(TLogDataSource *log);
 typedef struct datasource TDataSource;
 typedef float (* TGetPrefetchRateDataSource)(TDataSource* );
 typedef void* (* TPickDataSource)(TDataSource *);
+typedef void* (* TPickFromAdaptiveDataSource)(TDataSource *, int version, long int segment);
 typedef void* (* TPickForPrefetchDataSource)(TDataSource *);
 typedef void (* TResetDataSource)(TDataSource *);
 typedef int (* TSizeDataSource)(TDataSource *);
@@ -75,6 +81,7 @@ struct datasource{
 	// public methos
 	TGetPrefetchRateDataSource getPrefetchRate;
 	TPickDataSource pick;
+	TPickFromAdaptiveDataSource pickFromAdaptive;
 	TPickForPrefetchDataSource pickForPrefetch;
 	TResetDataSource reset;
 	TSizeDataSource size;
@@ -85,6 +92,8 @@ struct datasource{
 //from collection
 void *createFromCollectionDataSource(TDataCatalog *dataCatalog);
 void *pickFromCollectionDataSource(TDataSource *dataSource);
+void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int segment);
+//void *pickFromAdaptiveDatasource(TDataSource *dataSource);
 void resetFromCollectionDataSource(TDataSource *dataSource);
 int sizeFromCollectionDataSource(TDataSource *dataSource);
 int durationFromCollectionDataSource(TDataSource *dataSource);

@@ -18,8 +18,10 @@ typedef struct object TObject;
 void** newCatalogObject(int size);
 void disposeCatalogObject(TObject** catalog, int size);
 
-TObject* initObject(char *id, float lentgh,int lengthBytes, int gPopularity, int lPopularity);
-//TObject* initObject(TIdObject id, float length,int lengthBytes, int gPopularity, int lPopularity);
+//TObject* initObject(char *id, float lentgh,int lengthBytes, int gPopularity, int lPopularity);
+TObject* initObject(char *id,int version,int chunkNumber, float lentgh,int lengthBytes, int bitRate);
+
+
 TObject* cloneObject(TObject *object);
 float getLengthObject(TObject *object);
 int getStoredObject(TObject *object);
@@ -72,6 +74,7 @@ TListObject *createListObject();
 typedef void  (*TRemoveListObject)(TListObject* listObject, void* object);
 typedef void* (*TGetNextListObject)(TListObject *listObject, void* object);
 typedef void* (*TGetObjectListObject)(TListObject *listObject, void* object);
+typedef void* (*TGetObjectSegmentListObject)(TListObject *listObject, void* object);
 typedef void* (*TGetHeadListObject)(TListObject* listObject);
 typedef void* (*TGetTailListObject)(TListObject* listObject);
 typedef void* (*TGetLFUListObject)(TListObject* listObject);
@@ -116,6 +119,7 @@ struct listObject {
 	void *data;
 	TRemoveListObject remove;
 	TGetObjectListObject getObject;
+	TGetObjectSegmentListObject getObjectSegment;
 	TGetNextListObject getNext;
 	TGetHeadListObject getHead;
 	TGetTailListObject getTail;

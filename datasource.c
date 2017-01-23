@@ -155,7 +155,8 @@ typedef struct _data_FromPlayList TFromPlaylistDataCatalog;
 
 struct _data_FromCollection {
 	void **objects;
-	unsigned int size;
+	//unsigned int size;
+	long int size;
 };
 
 struct _data_FromPlayList {
@@ -174,7 +175,7 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 	char idVideo[400];
 	char xuploaded[26];
 	xuploaded[0] = '\0';
-	int views, min, sec, ms, lengthBytes;//@_05/10
+	int bitRate,version, chunkNumber, min, sec, ms, lengthBytes;//@_05/10
 	float length;
 	int stars;
 	//float ratings;
@@ -193,7 +194,7 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 
 	objects = newCatalogObject(size);
 
-	fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &views, &stars,	&lengthBytes, xuploaded);
+	fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,	&lengthBytes, xuploaded);
 	//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
 	while (!feof(fp) && (i < size)) {
 
@@ -201,7 +202,7 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 
 		length = (min * 60*1000 + sec +((float)ms/1000));//Tamanho em tempo de milissegundos
 
-		objects[i] = initObject(idVideo, length,lengthBytes, views, 0);
+		objects[i] = initObject(idVideo,version, chunkNumber, length,lengthBytes, bitRate);
 		setStoredObject(objects[i], length);
 		setLPopularityObject(objects[i], 0);
 		setUploadObject(objects[i], xuploaded);
@@ -214,7 +215,7 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 
 		i++;
 		//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
-		fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &views, &stars,
+		fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,
 				&lengthBytes, xuploaded);
 	}
 
@@ -283,7 +284,7 @@ TDataCatalog *createFromCollectionSingletonDataCatalog(TParsDataCatalog *pars) {
 
 TDataCatalog *createFromCollectionDataCatalog(TParsDataCatalog *pars) {
 	char *filename;
-	unsigned int size;
+	long int size;
 	char *entry = pars->entry;
 	void *randomic = pars->randomic;
 	TDataCatalog *ds;
@@ -319,6 +320,9 @@ void disposeFromCollectionDataCatalog(TDataCatalog *dataCatalog) {
 	}
 }
 
+
+//data catalog from playlist
+//functions and definitions
 static void cleanupFromPlayListDataCatalog(TDictionary *d){
 	TObject *object = d->first(d);
 
@@ -339,8 +343,6 @@ static void cleanupFromPlayListDataCatalog(TDictionary *d){
 
 }
 
-//data catalog from playlist
-//functions and definitions
 TSetList **initFromPlayListDataCatalog(char *playLists, unsigned int length,
 		char *catalog) {
 	TDictionary *d = createDictionary();
@@ -353,7 +355,7 @@ TSetList **initFromPlayListDataCatalog(char *playLists, unsigned int length,
 	TKeyDictionary key;
 	char idVideo[400];
 	char xuploaded[26];
-	int views, min, stars, sec, ms, lengthBytes;
+	int bitRate,views,version, chunkNumber, min, stars, sec, ms, lengthBytes;
 	float ratings,duration;
 	char line[6000];
 	char *lineptr;
@@ -378,7 +380,7 @@ TSetList **initFromPlayListDataCatalog(char *playLists, unsigned int length,
 		duration = (min * 60*1000 + sec + ((float)ms/1000));//@ to milliseconds
 
 
-		object = initObject(idVideo, duration,lengthBytes, views, 0);
+		object = initObject(idVideo,version, chunkNumber, duration,lengthBytes, bitRate);
 
 		//setRatingObject(object, ratings);
 		setRatingObject(object, lengthBytes);
@@ -592,6 +594,44 @@ void *pickFromCollectionDataSource(TDataSource *dataSource) {
 	return obj;
 }
 
+//Pick parametrizavel para conteudo adaptativo
+
+void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int segment) { //Criar pick parametrizavel
+//void *pickFromAdaptiveDatasource(TDataSource *dataSource) { //Criar pick parametrizavel
+	TObject *obj;
+	// pick one video from catalog
+
+	unsigned int i,j=1,h;
+	long int c;
+
+	TDataCatalog *dataCatalog = dataSource->datacatalog;
+	TFromCollectionDataCatalog *data = dataCatalog->data;
+
+	TRandomic *randomic = dataCatalog->dynamic;
+
+
+	void **objects = data->objects;
+
+	i = (version*6133)+segment;
+
+	if ((i < 0) || (i >= data->size)) {
+		printf("PANIC: Error on pick UP procedure %u\n", i);
+		exit(0);
+	}
+
+
+	addLPopularityObject(objects[i]);
+
+	obj = cloneObject(objects[i]);
+	setLPopularityObject(obj, 0);
+
+	return obj;
+}
+
+
+//
+
+
 void *pickTopKFromCatalogDataSource(TDataSource *catalog, float ratio) {
 	TObject *obj, **objects;
 
@@ -751,17 +791,7 @@ int firstkDurationFromCollectionDataSource(TDataSource *dataSource, int k){
 }
 
 void resetFromCollectionDataSource(TDataSource *dataSource){
-	/*TDataRandomic *p = (TDataRandomic *)randomic->data;
-	    TDataFromFileRandomic *pars = (TDataFromFileRandomic *)p->pars;
 
-
-	    if( !feof(pars->fp) )
-	    	fscanf(pars->fp,"%u",&(p->pick));
-	    else{
-	    	printf("ERROR: reached end of file\n");
-	    	fseek(pars->fp, 0L, SEEK_SET);
-	    	fscanf(pars->fp,"%u",&(p->pick));
-	    }*/
 	TDataCatalog *dataCatalog = dataSource->datacatalog;
 		//TFromCollectionDataCatalog *data = dataCatalog->data;
 		char *entry=NULL;
@@ -796,7 +826,7 @@ void resetDataSource(TDataSource *dataSource) {
 }
 
 
-void* createFromCollectionDataSource(TDataCatalog *dataCatalog) {
+void* createFromCollectionDataSource(TDataCatalog *dataCatalog) {//@05_01_17_Criar o modelo Adaptive
 	TDataSource *dataSource;
 
 	dataSource = (TDataSource*) malloc(sizeof(TDataSource));
@@ -805,11 +835,13 @@ void* createFromCollectionDataSource(TDataCatalog *dataCatalog) {
 
 	dataSource->getPrefetchRate = getPrefetchRateDataSource;
 	dataSource->pick = pickFromCollectionDataSource;
+	dataSource->pickFromAdaptive = pickFromAdaptiveDatasource;
 	dataSource->pickForPrefetch = pickForPrefetchDataSource;
 	dataSource->reset = resetFromCollectionDataSource;
 	dataSource->size = sizeFromCollectionDataSource;
 	dataSource->duration = durationFromCollectionDataSource;//@ Criar tamanho em Bytes da colecao ?
 	dataSource->firstkduration = firstkDurationFromCollectionDataSource;
+	//buffering
 
 	return dataSource;
 }
@@ -841,4 +873,154 @@ void *createPrefetchNextFromPlaylist(char *pars) {
 	lp->dispose(lp);
 
 	return prefetch;
+}
+
+
+
+//###################################################################################################
+
+//Datacatalog Adaptive
+//data source init
+static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *filename,
+		long int size) {
+	TFromCollectionDataCatalog *data;
+	void **objects;
+	FILE* fp;
+
+	char idVideo[400];
+	char xuploaded[26];
+	xuploaded[0] = '\0';
+	int bitRate,version,chunkNumber, min, sec, ms, lengthBytes;//@_05/10
+	float length;
+	int stars;
+	//float ratings;
+
+	long int i = 0;
+
+	fp = fopen(filename, "r");
+	if (!fp) {
+		fprintf(stderr, "ERROR:datasource.c -- FILE NOT FOUND: %s \n",
+				filename);
+		exit(0);
+	}
+
+	data = (TFromCollectionDataCatalog *) malloc(
+			sizeof(TFromCollectionDataCatalog));
+
+	objects = newCatalogObject(size);
+
+	fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+	//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
+	while (!feof(fp) && (i < size)) {
+
+		//fscanf(fp, "%s %d %d %d %d %f %s", idVideo, &min, &sec, &views,  &stars, &ratings, xuploaded);
+
+		length = (min * 60*1000 + sec +((float)ms/1000));//Tamanho em tempo de milissegundos
+
+		objects[i] = initObject(idVideo, version, chunkNumber, length,lengthBytes, bitRate);
+		setStoredObject(objects[i], length);
+		//setLPopularityObject(objects[i], 0);
+		//setUploadObject(objects[i], xuploaded);
+		setAccessFrequencyObject(objects[i], 0.094214); // Access Stream dependent. Used by GDSP Policy
+		setLastAccessObject(objects[i], 0);
+		setCumulativeValueObject(objects[i], 0.0);
+		setNormalizedByteServedObject(objects[i], 0.0);
+
+		setBitRateObject(objects[i], 128.f);
+
+		i++;
+		//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
+		//fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,	&lengthBytes, xuploaded);
+		fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+		//teste
+		printf("%s \n",idVideo);
+	}
+
+	if (size > i) {
+		fprintf(stderr,
+				"ERROR:datasource.c::loadCatalogFromFile: CATALOG SOURCE HAS LESS OBJECTS THAN REQUESTED\n");
+		fprintf(stderr,
+				"ERROR:datasource.c::loadCatalogFromFile: THE CATALOG SIZE IS %d\n",i);
+		exit(0);
+	}
+
+	data->objects = objects;
+	data->size = size;
+
+	fclose(fp);
+
+	return data;
+}
+
+
+
+TDataCatalog *createFromCollectionSingletonAdaptiveDataCatalog(TParsDataCatalog *pars) {
+	// store all setup DataCatalog
+	static TDictionary *d = NULL;
+
+	TDataCatalog *dataCatalog = NULL;
+	char *entry = pars->entry;
+	//void *randomic=pars->randomic;
+	char *filename;
+	// extract parameters from user's entry limited by semi-color
+	TParameters *lp = createParameters(entry, PARAMETERS_SEPARATOR);
+
+	lp->iterator(lp);
+
+	// walk through the parameters as setting up
+	filename = lp->next(lp);
+	if (!d)
+		d = createDictionary();
+
+	TKeyDictionary key;
+
+	key = d->keyGenesis(filename);
+	if (d->has(d, key))
+		dataCatalog = d->retrieval(d, key);
+	else {
+		dataCatalog = createFromCollectionAdaptiveDataCatalog(pars);
+		d->insert(d, key, dataCatalog);
+	}
+
+	lp->dispose(lp);
+
+	return dataCatalog;
+}
+
+TDataCatalog *createFromCollectionAdaptiveDataCatalog(TParsDataCatalog *pars) {
+	char *filename;
+	long int size;
+	char *entry = pars->entry;
+	void *randomic = pars->randomic;
+	TDataCatalog *ds;
+	// extract parameters from user's entry limited by semi-color
+	TParameters *lp = createParameters(entry, PARAMETERS_SEPARATOR);
+
+	lp->iterator(lp);
+
+	// walk through the parameters as setting up
+	filename = lp->next(lp);
+	size = atol(lp->next(lp));
+
+	ds = malloc(sizeof(TDataCatalog));
+	ds->data = initFromCollectionAdaptiveDataCatalog(filename, size);
+	ds->dynamic = randomic;
+	ds->dispose = disposeFromCollectionAdaptiveDataCatalog;
+
+	lp->dispose(lp);
+
+	return ds;
+}
+
+void disposeFromCollectionAdaptiveDataCatalog(TDataCatalog *dataCatalog) {
+	TFromCollectionDataCatalog *data;
+	if (dataCatalog) {
+		data = dataCatalog->data;
+		if (data->objects) {
+			disposeCatalogObject((TObject **) data->objects, data->size);
+			free(data->objects);
+			free(data);
+		}
+		free(dataCatalog);
+	}
 }

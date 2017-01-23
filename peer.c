@@ -373,10 +373,10 @@ static short insertCachePeer(TPeer *peer, void *vObject, void *vSystemData, int 
 
 	//Record a miss
 	//TStatsCache *statsCache = hc->getStats(hc,levels);
-	TStatsCache *statsCache = cache->getStats(cache);
+	/*TStatsCache *statsCache = cache->getStats(cache);
 
 	statsCache->addMiss(statsCache, 1);
-	statsCache->addByteMiss(statsCache, getLengthObject(video) );
+	statsCache->addByteMiss(statsCache, getLengthObject(video) );*/
 
 	//try to insert missed video
 	return hc->insert( hc,levels, video, systemData ) ;

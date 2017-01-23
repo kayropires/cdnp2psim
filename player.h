@@ -41,11 +41,11 @@ typedef short (* TIsFitInWindow)(TPlayer *player, void *object);
 typedef short (* THasWindow)(TPlayer *player, void *object);
 typedef short (* TDisposeWindow)(TPlayer* player);
 typedef void (* TShowWindow)(TPlayer* player);
-typedef short (* TGetLevelStorageWindow)(TPlayer* player);
-typedef TAvailabilityWindow (* TGetAvailabilityWindow)(TPlayer* player);
+typedef short (* TGetLevelStorageWindow)(TWindow* window);
+typedef TAvailabilityWindow (* TGetAvailabilityWindow)(TWindow* window);
 typedef TSizeWindow (* TGetSizeWindow)(TWindow* window);
-typedef void *(* TGetWindow)(TPlayer* player);
-typedef TOccupancyWindow(* TGetOccupancyWindow)(TPlayer *player);
+typedef TWindow *(* TGetWindow)(TPlayer* player);
+typedef TOccupancyWindow(* TGetOccupancyWindow)(TWindow *window);
 typedef unsigned int (* TGetNumberOfStoredObjectWindow)(TPlayer* player);
 
 struct player{

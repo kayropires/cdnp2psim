@@ -150,12 +150,12 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 	//player->show = showWindow;
 	//player->has = hasWindow;
 	//gets
-	/*player->getAvailability = getAvailabilityWindow;
-	player->getSize = getSizeWindow;
+	//player->getAvailability = getAvailabilityWindow;
+	//player->getSize = getSizeWindow;
 
 	//player->getLevelStorage = getLevelStoragePlayer;
-	/*player->getOccupancy = getOccupancyWindow;
-	player->getNumberOfStoredObject = getNumberOfStoredObjectWindow;*/
+	//player->getOccupancy = getOccupancyWindow;
+	//player->getNumberOfStoredObject = getNumberOfStoredObjectWindow;
 	//sets
 	//player->setStorage = setStoragePlayer;
 
@@ -168,35 +168,28 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
 	TObject *video, *cloneVideo;
 	TListObject *listEvicted;
-	TPeer *serverPeer;
-	TArrayDynamic *listPeers;
+	//TPeer *serverPeer;
+	//TArrayDynamic *listPeers;
 	TDataSource *dataSource;
 	TItemHashTable *item;
 	TIdObject idVideo;
 	TPlayer *player;
 	TWindow *window;
-
-	float occupWindow=0, sizeWindow;
+	int version=6;
+	long int segment=0;
+	//float sizeWindow;
 	TPeer *peer = community->getPeer(community, idPeer);
 	player = peer->getPlayer(peer);
 	window = player->getWindow(player);
 
-	//THCache *hc=peer->getHCache(peer); //@
-	short lStorage=window->getLevelStorage(window); //@
+	short lStorage=window->getLevelStorage(window);
 	dataSource = peer->getDataSource(peer);
+	//sizeWindow = window->getSize(window);
 
-	//i = player->getEndLastWindow(player);
-	sizeWindow = window->getSize(window);
-
-	dataSource->reset(dataSource);
-	video = dataSource->pick(dataSource);
-
-
-
-	//player->
+	video = dataSource->pickFromAdaptive(dataSource,version,segment);
 
 	while(window->getAvailability(window) >= getLengthObject(video)){
-		//setar ocupacao aq
+
 		window->setOccupancy(window, getLengthObject(video));
 		cloneVideo=cloneObject(video);
 
@@ -214,17 +207,13 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 			hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 
 		}
-		//senao PANIC
-		video = dataSource->pick(dataSource);
 
-
-
-
+		segment++;
+		video = dataSource->pickFromAdaptive(dataSource,version,segment);
 
 	}
-
-
 }
+
 static short schedulingChunk(TWindow *window, void *object){
 	short status=0;
 /*	TDataCache *data = cache->data;

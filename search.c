@@ -262,22 +262,16 @@ static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, u
 	TDataSearch *data = search->data;
 	TDataNeighborhoodSearch *data_neighborhood = data->data_policy;
 	TArrayDynamic *listPeers = createArrayDynamic(1);
-	//TPriorityQueue *pq = createMaximumPriorityQueue(10);
-	//TPeer **listPeers;
 	THCache *hcache;
 
 	short found = 0;
 	int i, occup;
 	int levelInit, levelEnd;
-	//TItemNeighborhoodSearch *item;
 	unsigned int level=0, 	idPeer = peer->getId(peer), idSource = idPeer;
 	int idRequester = -1;
 
-	//visited->insert(visited, idPeer, peer);
-	//do{
 	TTopology *topo = peer->getTopologyManager(peer);
 
-	//if (!peer->canStream(peer,object,clientId, prefetchFraction)){
 	TArrayDynamic *neighbors = topo->getNeighbors(topo);
 	if (idRequester>=0){
 		topo->updateRequestsStats(topo,idRequester,1);
@@ -286,16 +280,10 @@ static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, u
 	idRequester = peer->getId(peer);
 	occup = neighbors->getOccupancy(neighbors);
 
-	//listPeers = malloc(1 * sizeof(TPeer*));//Cria vetor com lista de pares a retornar
-
 	for(i=0;i<occup;i++){  // BFS on neighborhood
 
 		peer = neighbors->getElement(neighbors,i);
 		idPeer = peer->getId(peer);
-		//if (peer->canStream(peer,object,clientId, prefetchFraction)){
-			//idPeer = peer->getId(peer);
-		/*	if (!visited->retrieval(visited, idPeer)){
-				visited->insert(visited, idPeer, peer);*/
 
 				hcache=peer->getHCache(peer);
 				levelInit=0;
@@ -305,46 +293,7 @@ static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, u
 					found++;
 				}
 
-
-				//pq->enqueue(pq,level+1,createItemNeighborhoodSearch(level+1, idRequester, peer));
-			//}//end if !visited
-		//}
 	}
-	//}
-
-	/*
-			item =pq->dequeue(pq);
-			if (item){
-				level = item->level;
-				peer = item->peer;
-				idRequester = item->idRequester;
-				free(item);
-			}else{
-				deadend = 1;
-			}
-
-		}else{
-			found = 1;
-			if (idRequester>=0){
-				topo->updateHitsStats(topo,idRequester,1);
-				peer->updateHitsMapQuery(peer,idSource, level);
-			}
-		}*/
-
-	//}while( (!found) && (!deadend) && (level<=data_neighborhood->maxlevel) );
-
-	/*	item =pq->dequeue(pq);
-	while(item){
-		free(item);
-		item =pq->dequeue(pq);
-	}
-	pq->ufree(pq);*/
-
-	//visited->ufree(visited);
-	/*
-	if (!found)
-		peer = NULL;*/
-
 	return listPeers;
 }
 

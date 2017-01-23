@@ -188,16 +188,16 @@
 					<replicate>
 						<parameter name="dynamic">REPLICATE:RANDOM</parameter>
 						<parameter name="bfraction">0.5</parameter>
-						<parameter name="swindow">512</parameter>
+						<parameter name="swindow">10</parameter>
 					</replicate>
 					<access>
 						<parameter name="dynamic">RANDOM:FROMFILESINGLETON</parameter>
 						<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/Padrao_Acesso_ColecaoYouTubeEntretenimento.out</parameter>
 					</access>
 					<catalog>
-						<parameter name="dynamic">DATACATALOG:FROMCOLLECTIONSINGLETON</parameter>
+						<parameter name="dynamic">DATACATALOG:FROMCOLLECTIONSINGLETONADAPTIVE</parameter>
 						<parameter name="collection">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/ColecaoYoutube_Entretenimento.txt</parameter>
-						<parameter name="length">6134</parameter>
+						<parameter name="length">42931</parameter>
 					</catalog>
 				</datasource>
 			</content>

@@ -16,6 +16,8 @@ typedef struct _data_object TDataObject;
 
 struct _data_object {
 	TIdObject id; // (YOUTUBEID/char)
+	int version;
+	long int chunkNumber;
 	float length; // in seconds or milliseconds
 	int lengthBytes;//in Bytes
 	float stored; //in seconds
@@ -47,7 +49,7 @@ void disposeCatalogObject(TObject** catalog, int size) {
 		free(catalog[i]);
 }
 
-TObject* initObject(TIdObject id, float length,int lengthBytes, int bitRate, int lPopularity) {
+TObject* initObject(TIdObject id,int version,int chunkNumber, float length,int lengthBytes, int bitRate) {
 
 	TDataObject *dataObj = malloc(sizeof(TDataObject));
 	TObject *object = (TObject *) malloc(sizeof(TObject));
@@ -57,12 +59,14 @@ TObject* initObject(TIdObject id, float length,int lengthBytes, int bitRate, int
 		exit(0);
 	}
 	strcpy(dataObj->id, id);
+	dataObj->version = version;
+	dataObj->chunkNumber = chunkNumber;
 	dataObj->length = length; //duration
 	dataObj->lengthBytes = lengthBytes;
 	dataObj->stored = length;
 	dataObj->replicado = 0;
 	dataObj->bitRate = bitRate; //Overall bit rate |mode: variable
-	dataObj->lPopularity = lPopularity;
+	//dataObj->lPopularity = lPopularity;
 	dataObj->rating = 0.0;
 	dataObj->cumulativeValue = 0.0;
 	dataObj->lastAccess = 0;
@@ -81,6 +85,8 @@ void copyObject(TObject *src, TObject *dest) {
 	TDataObject *dataDest = dest->data;
 
 	strcpy(dataDest->id, dataSrc->id);
+	dataDest->version = dataSrc->version;
+	dataDest->chunkNumber = dataSrc->chunkNumber;
 	dataDest->length = dataSrc->length;
 	dataDest->lengthBytes = dataSrc->lengthBytes;
 	dataDest->stored = dataSrc->stored;
@@ -117,6 +123,8 @@ void showObject(TObject *p) {
 	TDataObject *data = p->data;
 
 	printf("%s ", data->id);
+	printf("%s ", data->version);
+	printf("%s ", data->chunkNumber);
 	printf("%f ", data->length);
 	printf("%d ", data->lengthBytes);
 	printf("%f ", data->stored);
@@ -305,6 +313,18 @@ short isEqualObject(TObject *first, TObject *second) {
 	TDataObject *dataSecond = second->data;
 	return (strcmp(dataFirst->id, dataSecond->id) == 0);// @...
 }
+
+short isEqualObjectSegment(TObject *first, TObject *second) {
+	TDataObject *dataFirst = first->data;
+	TDataObject *dataSecond = second->data;
+	int status=0;
+
+	if(dataFirst->chunkNumber==dataSecond->chunkNumber){
+		status=1;
+	}
+	return status;
+}
+
 
 short isReplicatedObject(TObject *object) {
 	TDataObject *data = object->data;
@@ -944,7 +964,25 @@ static void* getNotLessThanCumulativeValueListObject(TListObject* listObject, vo
 	}
 	return ((MinCValue != object ? MinCValue : NULL ));
 }
+//
 
+static void* getObjectSegmentListObject(TListObject *listObject, void* object) {
+	TElemListObject *walk;
+	short found = 0;
+	TDataListObject *dataListObject = listObject->data;
+
+	walk = dataListObject->head;
+
+	while (walk != NULL && !found) {
+		if ( isEqualObjectSegment(walk->object, object) )
+			found = 1;
+		else
+			walk = walk->next;
+	}
+
+	return (found?walk->object:NULL);
+}
+//
 static void* getObjectListObject(TListObject *listObject, void* object) {
 	TElemListObject *walk;
 	short found = 0;
@@ -1010,6 +1048,7 @@ TListObject *createListObject() {
 
 	listObject->remove = removeListObject;
 	listObject->getObject = getObjectListObject;
+	listObject->getObjectSegment = getObjectSegmentListObject;
 	listObject->getNext = getNextListObject;
 	listObject->getHead = getHeadListObject;
 	listObject->getTail = getTailListObject;

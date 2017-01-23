@@ -329,14 +329,7 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 	int i;
 	TObject *storedObject=NULL;
 	TListObject *listObject;
-/*
-	if(levelInit==NULL || levelEnd==NULL){
-		levelInit=0;
-		levelEnd=(hc->getLevels(hc))-1;
-		i=levelInit;
-	}else{
 
-	}*/
 	i=levelInit;
 	if (levelInit < 0 || levelInit >  levelEnd) {
 		printf("hierarchy.c:searchObjectHCache,Erro: Incorrect search range \n");
@@ -346,7 +339,7 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 			cache=data->hcache[i];
 
 			listObject = cache->getObjects(cache);
-			storedObject = listObject->getObject(listObject, object);//
+			storedObject = listObject->getObjectSegment(listObject, object);//
 
 			i++;
 		}

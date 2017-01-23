@@ -13,6 +13,7 @@ typedef struct _dataRandomic TDataRandomic;
 struct _dataRandomic{
     unsigned short seed[3];
     unsigned int pick;
+    long int pickAdaptive;
     void *pars;
 };
 
@@ -946,6 +947,7 @@ TRandomic *createFromFileRandomic(char *entry){
 
     p->data = data;
     p->pick = pickFromFileRandomic;
+    //p->pickAdaptive = pickAdaptiveRandomic;
     p->reset = resetFromFileRandomic;
     p->last = getLastPickedFromFileRandomic;
     p->dispose = disposeFromFileRandomic;
@@ -970,6 +972,23 @@ TPickedRandomic pickFromFileRandomic(TRandomic *randomic){
 
     return p->pick;
 }
+
+TPickedRandomic pickAdaptiveRandomic(TRandomic *randomic, int version, long int segment){
+    TDataRandomic *p = (TDataRandomic *)randomic->data;
+    TDataFromFileRandomic *pars = (TDataFromFileRandomic *)p->pars;
+
+
+    if( !feof(pars->fp) )
+    	fscanf(pars->fp,"%u",&(p->pick));
+    else{
+    	printf("ERROR: reached end of file\n");
+    	fseek(pars->fp, 0L, SEEK_SET);
+    	fscanf(pars->fp,"%u",&(p->pick));
+    }
+
+    return p->pick;
+}
+
 
 // reset
 void resetFromFileRandomic(TRandomic *randomic){
