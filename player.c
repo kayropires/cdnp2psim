@@ -113,7 +113,7 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 
 
 	//window->request = requestChunk;		 // dispara requição/requisições
-	window->scheluding = schedulingChunk;		 // dispara requição/requisições
+	window->scheluding = schedulingChunk;		 // escalona segmentos
 	window->isFitInWindow = isFitInWindow; 		//verifica se item cabe no tempo da janela
 	window->show = showWindow;
 	window->has = hasWindow;
@@ -121,7 +121,6 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 	//gets
 	window->getAvailability = getAvailabilityWindow;
 	window->getSize = getSizeWindow;
-
 	window->getLevelStorage = getLevelStorageWindow;
 	window->getOccupancy = getOccupancyWindow;
 	window->getNumberOfStoredObject = getNumberOfStoredObjectWindow;
@@ -204,6 +203,7 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 
 			// updating hash table due to evicting that made room for the cached video
 			listEvicted = peer->getEvictedCache(peer);
+
 			hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 
 		}
@@ -243,6 +243,8 @@ static short isFitInWindow(TWindow *window, TObject *object){
 
 static void playbackWindow(TPlayer *player){
 	TDataPlayer *data = player->data;
+	float playbackTime,stallTime,spentTime;
+
 
 	//player->resetOccupancy(player, 0.0);
 

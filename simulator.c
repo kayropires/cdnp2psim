@@ -303,6 +303,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	listPeers = community->searching(community,peer,video,idPeer, zero);
 
 	//chamada pra função de escalonamento
+	//serverPeer = peer->scheduling(peer,listPeers);
 
 	occup=listPeers->getOccupancy(listPeers);
 	if(occup==0){
@@ -454,12 +455,13 @@ void closeAllPeerOpenULVideoChannelsSimulator(TPeer *server, TCommunity *communi
 
 
 
-void runSimulator(unsigned int SimTime, unsigned int warmupTime, unsigned int scale, TPriorityQueue* queue, TCommunity* community, THashTable* hashTable, TSystemInfo *sysInfo){
+void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TPriorityQueue* queue, TCommunity* community, THashTable* hashTable, TSystemInfo *sysInfo){
 	TEvent *event;
 	TTimeEvent timeEvent;
 	TTypeEvent typeEvent;
 	unsigned int idPeer;
 	TPeer *peer;
+	TPlayer *player;
 
 	float videoLength;
 	float hitRate=0, missRate=0, byteHitRate, byteMissRate, hitRateCom;
@@ -482,13 +484,13 @@ void runSimulator(unsigned int SimTime, unsigned int warmupTime, unsigned int sc
 
 
 
-		fprintf(stderr, "Sim time: %d\n", SimTime);
+		fprintf(stderr, "Sim time: %f\n", SimTime);
 
 	while ( clock < SimTime ){
 		event = queue->dequeue(queue);
 		eventCount++;
 
-		printf(" Clock: %f\n",clock);
+		printf(" Clock: %0.2f\n",clock);
 		if (!event){
 			fprintf(stderr,"ERROR: simulator.c: run out of events\n");
 			exit(0);
@@ -501,6 +503,7 @@ void runSimulator(unsigned int SimTime, unsigned int warmupTime, unsigned int sc
 		event->ufree(event);
 
 		peer = community->getPeer(community, idPeer);
+		player = peer->getPlayer(peer);
 
 
 
@@ -715,8 +718,7 @@ void runSimulator(unsigned int SimTime, unsigned int warmupTime, unsigned int sc
 			//processBuffering(idPeer, hashTable, community, sysInfo);
 
 			//Inserir aqui o processo de Bufferizacao;
-			TPlayer *player;
-			player = peer->getPlayer(peer);
+
 			player->buffering(idPeer, hashTable, community, sysInfo);
 
 			//Queuing A Request event based on video length and the user thinking time
@@ -729,6 +731,9 @@ void runSimulator(unsigned int SimTime, unsigned int warmupTime, unsigned int sc
 		}else if ( (typeEvent == PLAYBACK) ){
 
 			//processPlayback(hashTable,community,sysInfo);
+
+			player->playback(player);
+
 
 			//event based on playback chunk length
 			timeEvent = clock + 2;//@ ajustar o tempo de reproducao
@@ -773,10 +778,12 @@ int main(int argc, char **argv){
 	TPriorityQueue* queue;
 	THashTable* hashTable;
 	TSystemInfo* systemData;
-	unsigned int simTime, warmupTime, scale;
+	//unsigned int simTime, warmupTime, scale;
+	unsigned int warmupTime, scale;
+	float simTime;
 
 
-	simTime = (int)(1.5f*(float)YEARS_TO_SECONDS);
+	simTime = (float)(1.5f*(float)YEARS_TO_SECONDS);
 	warmupTime = 8*HOURS_TO_SECONDS;
 	scale = HOURS_TO_SECONDS;
 

@@ -4,8 +4,10 @@
 
 
 
-typedef unsigned int TUpTimeStatsPeer;
-typedef unsigned int TDownTimeStatsPeer;
+//typedef unsigned int TUpTimeStatsPeer;
+//typedef unsigned int TDownTimeStatsPeer;
+typedef float TUpTimeStatsPeer;
+typedef float TDownTimeStatsPeer;
 typedef unsigned int TRequestStatsPeer;
 
 typedef struct statsPeer TStatsPeer;
@@ -37,10 +39,12 @@ typedef void *(* TGetDynamicLeavePeer)(TPeer *peer);
 typedef void *(* TGetDynamicRequestPeer)(TPeer *peer);
 typedef unsigned int (* TGetRequestTimePeer)(TPeer* peer);
 typedef unsigned int (* TGetReplicateTimePeer)(TPeer* peer);
-typedef unsigned int (* TGetUpSessionDurationPeer)(TPeer* peer);
-typedef unsigned int (* TGetDownSessionDurationPeer)(TPeer* peer);
-typedef unsigned int (* TGetStartSessionPeer)(TPeer* peer);
-
+//typedef unsigned int (* TGetUpSessionDurationPeer)(TPeer* peer);
+//typedef unsigned int (* TGetDownSessionDurationPeer)(TPeer* peer);
+//typedef unsigned int (* TGetStartSessionPeer)(TPeer* peer);
+typedef float (* TGetUpSessionDurationPeer)(TPeer* peer);
+typedef float (* TGetDownSessionDurationPeer)(TPeer* peer);
+typedef float (* TGetStartSessionPeer)(TPeer* peer);
 
 typedef void *(* TGetHCachePeer)(TPeer* peer);
 typedef void *(* TGetPlayerPeer)(TPeer* peer);

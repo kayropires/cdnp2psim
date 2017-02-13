@@ -277,7 +277,8 @@ static TMapQuery *createMapQuery(unsigned int idPeer){
 typedef struct _data_peer TDataPeer;
 struct _data_peer{
 	unsigned int id;
-	unsigned long int startSession;
+	//unsigned long int startSession;
+	float startSession;
 	short tier;
     short status;
     TDictionary *Queries;
@@ -321,7 +322,7 @@ TDataPeer *initDataPeer(unsigned int id, short tier, void *dynamicJoin, void *dy
 	data->id = id;
 	data->status = DOWN_PEER;
 	data->tier = tier;
-	data->startSession = NULL; //@ startSession
+	data->startSession = 0; //@ startSession
 
 	data->dynamicJoin = dynamicJoin;
 	data->dynamicLeave = dynamicLeave;
@@ -581,7 +582,7 @@ static unsigned int getReplicateTimePeer(TPeer* peer){
 
 }
 
-static unsigned int getUpSessionDurationPeer(TPeer* peer){
+static float getUpSessionDurationPeer(TPeer* peer){
 	TDataPeer *data = peer->data;
 
 	TSessionLasting *sl = data->dynamicJoin;
@@ -590,7 +591,7 @@ static unsigned int getUpSessionDurationPeer(TPeer* peer){
 	return sl->pick(sl, peer);
 }
 
-static unsigned int getDownSessionDurationPeer(TPeer* peer){
+static float getDownSessionDurationPeer(TPeer* peer){
 	TDataPeer *data = peer->data;
 	TSessionLasting *sl = data->dynamicLeave;
 
@@ -599,7 +600,7 @@ static unsigned int getDownSessionDurationPeer(TPeer* peer){
 }
 
 
-static void *getStartSessionPeer(TPeer* peer){
+static float getStartSessionPeer(TPeer* peer){
 	TDataPeer *data = peer->data;
 	return data->startSession;
 }

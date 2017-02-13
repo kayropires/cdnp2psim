@@ -10,7 +10,8 @@
 
 typedef struct system_info TSystemInfo;
 
-typedef unsigned long int TTimeSystem;
+//typedef unsigned long int TTimeSystem;
+typedef float TTimeSystem;
 typedef unsigned long int TLengthVideoCatalog;
 
 typedef TTimeSystem (*TGetTimeSystemInfo)(TSystemInfo *systemData);

@@ -130,6 +130,8 @@ typedef void* (* TGetCache)(THCache* hc, int levels);
 typedef int (* TGetLevelsHCache)(THCache* hc);
 typedef int (* TGetLevelPrincipalHCache)(THCache* hc);
 typedef int (* TGetLevelReplicateHCache)(THCache* hc);
+typedef int (* TGetLevelStorageHCache)(THCache* hc);
+
 
 
 
@@ -164,6 +166,7 @@ struct hcache{
 	TGetLevelsHCache getLevels;
 	TGetLevelPrincipalHCache getLevelPrincipal;
 	TGetLevelReplicateHCache getLevelReplicate;
+	TGetLevelStorageHCache getLevelStorage;
 	TGetCache getCache;
 	TGetOccupancyHCache getOccupancy;
 	TAddAvailabilityHCache addAvailability;

@@ -40,6 +40,7 @@ static void* getObjectsHCache(THCache* hc, int level);
 static int getLevelsHCache(THCache* hc);
 static int getLevelPrincipalHCache(THCache* hc);
 static int getLevelReplicateHCache(THCache* hc);
+static int getLevelStorageHCache(THCache* hc);
 static void* getCache(THCache *hc, int levels );
 static TOccupancyHCache getOccupancyHCache(THCache *hc, int levels);
 static void addAvailabilityHCache(THCache* hc, int levels, TAvailabilityHCache amount);
@@ -53,6 +54,7 @@ struct _data_hc{
 	int levels;
 	int levelPrincipal;
 	int levelReplicate;
+	int levelStorage;
 
 	TListObject *objects; // hcd objects
 	TListObject *disposed; // disposed objects by OMPolicyReplacement
@@ -73,6 +75,7 @@ static TDataHCache *initDataHCache(int levels){ //@
 	data->levels = levels;
 	data->levelPrincipal=0;
 	data->levelReplicate=1;
+	data->levelStorage=2;
 	//data->levelPrincipal=levelPrincipal;
 
 
@@ -119,6 +122,7 @@ THCache *createHCache(int levels){
 	hc->getLevels=getLevelsHCache;
 	hc->getLevelPrincipal=getLevelPrincipalHCache;
 	hc->getLevelReplicate=getLevelReplicateHCache;
+	hc->getLevelStorage=getLevelStorageHCache;
 	hc->getCache=getCache;
 	hc->addAvailability=addAvailabilityHCache;
 	hc->getOccupancy = getOccupancyHCache;
@@ -310,6 +314,11 @@ static int getLevelPrincipalHCache(THCache* hc){
 static int getLevelReplicateHCache(THCache* hc){
 	TDataHCache *data = hc->data;
 	return data->levelReplicate;
+}
+
+static int getLevelStorageHCache(THCache* hc){
+	TDataHCache *data = hc->data;
+	return data->levelStorage;
 }
 
 
