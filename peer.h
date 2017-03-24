@@ -88,6 +88,8 @@ typedef void *(* TGetCurrentlyViewingPeer)(TPeer *peer);
 typedef void (* TSetCurrentlyViewingPeer)(TPeer *peer, void* video);
 
 typedef short (* THasCachedPeer)(TPeer *peer, void* object);
+typedef void *(* THasCachedBiggerVersionPeer)(TPeer *peer, void* object);
+
 typedef void (* TSetTierPeer)(TPeer *peer, short tier);
 typedef short (*TGetTierPeer)(TPeer *peer);
 typedef void (*TUpdateCachePeer)(TPeer *peer, void *vObject, void *vSystemData);
@@ -101,7 +103,9 @@ typedef void (*TSetProfilePolicyPeer)(TPeer *peer, void* profilePolicy);
 typedef void (*TUpdateRequestsMapQueryPeer)(TPeer *peer, unsigned int idSource, short hops);
 typedef void (*TUpdateHitsMapQueryPeer)(TPeer *peer, unsigned int idSource, short hops);
 typedef void (*TShowMapQueryPeer)(TPeer *peer);
-typedef void (*TShowChannelsInfoPeer)(TPeer* peer);
+typedef void (*TShowChannelsInfoPeer)(TPeer *peer);
+typedef void* (*TSchedulingWindowPeer)(TPeer *peer, void *video, void* listPeer,void *picked);
+
 
 TPeer* createPeer(unsigned int id, short tier, void *pickDataOnSessionDynamic, void *pickDataOffSessionDynamic, void *pickDataRequest, void *dataSource, void *replicate, void *cache, void *topologyManager, void *channel);
 
@@ -159,6 +163,8 @@ struct peer {
 		TGetVideoReceivingFromPeer getVideoReceivingFrom;
 
 		THasCachedPeer hasCached;
+		THasCachedBiggerVersionPeer hasCachedBiggerVersion;
+
 		TSetTierPeer setTier;
 		TGetTierPeer getTier;
 		TInsertCachePeer insertCache;
@@ -173,6 +179,7 @@ struct peer {
 		TUpdateRequestsMapQueryPeer updateRequestsMapQuery;
 		TShowMapQueryPeer showMapQuery;
 		TShowChannelsInfoPeer showChannelsInfo;
+		TSchedulingWindowPeer schedulingWindow;
 };
 
 void *createAnderbergContentProfilePeer(void *entry);

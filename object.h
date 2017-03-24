@@ -24,7 +24,8 @@ TObject* initObject(char *id,int version,int chunkNumber, float lentgh,int lengt
 
 TObject* cloneObject(TObject *object);
 float getLengthObject(TObject *object);
-int getStoredObject(TObject *object);
+int getLengthBytesObject(TObject *object);
+float getStoredObject(TObject *object);
 int getReplicadoObject(TObject *object);
 int getGPopularityObject(TObject *object);
 int getLPopularityObject(TObject *object);
@@ -32,6 +33,7 @@ float getCumulativeValueObject(TObject *object);
 unsigned long int getLastAccessObject(TObject *object);
 float getAccessFrequencyObject(TObject *object);
 void getIdObject(TObject *object, char* id);
+long int getChunkNumber(TObject *object);
 float getRatingObject(TObject *object);
 char* getUploadObject(TObject * object);
 float getNormalizedByteServedObject(TObject *object);
@@ -58,6 +60,7 @@ short isPopularObject(TObject *object);
 void showObject(TObject *object);
 void disposeObject(TObject *object);
 short isEqualObject(TObject *first, TObject *second);
+short isBiggerObjectSegment(TObject *object, long int bigger);
 short isReplicatedObject(TObject *object);
 
 short lpopularityAsCriteriaObject(void* oldObject, void* newObject);
@@ -75,6 +78,7 @@ typedef void  (*TRemoveListObject)(TListObject* listObject, void* object);
 typedef void* (*TGetNextListObject)(TListObject *listObject, void* object);
 typedef void* (*TGetObjectListObject)(TListObject *listObject, void* object);
 typedef void* (*TGetObjectSegmentListObject)(TListObject *listObject, void* object);
+typedef void* (*TGetBiggerVersionSegmentListObject)(TListObject *listObject, void* object);
 typedef void* (*TGetHeadListObject)(TListObject* listObject);
 typedef void* (*TGetTailListObject)(TListObject* listObject);
 typedef void* (*TGetLFUListObject)(TListObject* listObject);
@@ -120,6 +124,7 @@ struct listObject {
 	TRemoveListObject remove;
 	TGetObjectListObject getObject;
 	TGetObjectSegmentListObject getObjectSegment;
+	TGetBiggerVersionSegmentListObject getBiggerVersion;
 	TGetNextListObject getNext;
 	TGetHeadListObject getHead;
 	TGetTailListObject getTail;

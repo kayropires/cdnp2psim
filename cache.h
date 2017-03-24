@@ -76,9 +76,9 @@ struct statsCache{
 
 
 //Cache related implementation
-typedef unsigned int TAvailabilityCache;
-typedef unsigned int TSizeCache;
-typedef unsigned int TOccupancyCache;
+typedef float TAvailabilityCache;
+typedef float TSizeCache;
+typedef float TOccupancyCache;
 typedef struct cache TCache;
 
 
@@ -90,6 +90,11 @@ TCache *createCache(TSizeCache size, void *policy );
 typedef void* (* TFirstKCache)(TCache *cache, int k);
 typedef short (* TUpdateCache)(TCache *cache, void *object, void *SystemData);
 typedef short (* TInsertCache)(TCache *cache, void *object, void *SystemData);
+
+
+typedef short (* TRemoveCache)(TCache *cache, void *object, void *SystemData);
+
+
 typedef short (* TIsCacheableCache)(TCache *cache, void *object, void *SystemData);
 typedef short (* THasCache)(TCache *cache, void *object);
 typedef short (* TDisposeCache)(TCache* cache);
@@ -117,6 +122,7 @@ struct cache{
 	TFirstKCache firstK;
 	TUpdateCache update;
 	TInsertCache insert;
+	TRemoveCache remove;
 	TIsCacheableCache isCacheable;
 	THasCache has;
 	TDisposeCache dispose;
@@ -145,6 +151,8 @@ typedef void TOMPolicy;
 
 // General Policy stuff declaration
 typedef short (* TOMReplaceGeneralPolicy)(void* systemData, TCache* cache, void* object);
+typedef short (* TOMRemoveGeneralPolicy)(void* systemData, TCache* cache, void* object);
+
 typedef short (* TOMUpdateGeneralPolicy)(void* systemData, TCache* cache, void* object);
 typedef short (* TOMCacheableGeneralPolicy)(void* systemData, TCache* cache, void* object);
 typedef void* (* TOMFirstKGeneralPolicy)(TCache* cache, int K);
@@ -158,6 +166,7 @@ typedef struct OMGeneralPolicy TOMGeneralPolicy;
 
 struct OMGeneralPolicy{
 	TOMReplaceGeneralPolicy Replace; // Object Management Policy Replacement(LRU/Popularity)
+	TOMRemoveGeneralPolicy Remove;
 	TOMUpdateGeneralPolicy Update; // Object Management Policy Update cache(LRU/Popularity)
 	TOMCacheableGeneralPolicy Cacheable; // Eligibility criteria
 	TOMFirstKGeneralPolicy FirstK; // First K object for policy
@@ -237,9 +246,9 @@ void* firstKLRUPolicy(TCache* cache, int k);
 typedef struct FIFOPolicy TFIFOPolicy;
 void *createFIFOPolicy(void *entry);
 short replaceFIFOPolicy(void* systemData, TCache* cache, void* object);
+short removeFIFOPolicy(void* systemData, TCache* cache, void* object);
 short updateFIFOPolicy(void* systemData, TCache* cache, void* object);
 short cacheableFIFOPolicy(void* systemData, TCache* cache, void* object);
-
 void* firstKFIFOPolicy(TCache* cache, int k);
 
 //@ LRU for Replicated
@@ -248,7 +257,6 @@ void *createLRURepPolicy(void *entry);
 short replaceLRURepPolicy(void* systemData, TCache* cache, void* object);
 short updateLRURepPolicy(void* systemData, TCache* cache, void* object);
 short cacheableLRURepPolicy(void* systemData, TCache* cache, void* object);
-
 void* firstKLRURepPolicy(TCache* cache, int k);
 
 //LFU

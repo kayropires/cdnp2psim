@@ -28,9 +28,14 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy );
 //Window
 typedef void (* TSetOccupancyWindow)(TWindow *window, float lenghtObject);
 
+typedef void (* TSetPlaybackedTime)(TWindow *window, float lenghtObject);
+typedef void (* TSetLastPlaybackedObj)(TWindow *window, float lenghtObject);
+
+
 typedef void (* TBufferingPlayer)(unsigned int idPeer, void* hashTable, void* community, void* systemData);
-typedef short (* TSchedulingPlayer)(TPlayer *player, void *object);
-typedef void (* TPlaybackPlayer)(TPlayer *player);
+typedef void* (* TSchedulingPlayer)(void *peer, void *video, void *listPeer,void *picked);
+typedef float (* TPlaybackPlayer)(TPlayer *player,void *hashTable, void *peer, void *systemData);
+
 typedef short (* TStallPlayer)(TPlayer *player);
 typedef void (* TSetStorageWindow)(TWindow *window, void *storage);
 
@@ -38,6 +43,8 @@ typedef void (* TSetStorageWindow)(TWindow *window, void *storage);
 typedef short (* TSwapStoragePlayer)(TPlayer *player);
 
 typedef short (* TIsFitInWindow)(TPlayer *player, void *object);
+typedef void* (* TSchedulingWindow)(void *peer, void *video, void *listPeer,void *picked);
+
 typedef short (* THasWindow)(TPlayer *player, void *object);
 typedef short (* TDisposeWindow)(TPlayer* player);
 typedef void (* TShowWindow)(TPlayer* player);
@@ -46,6 +53,12 @@ typedef TAvailabilityWindow (* TGetAvailabilityWindow)(TWindow* window);
 typedef TSizeWindow (* TGetSizeWindow)(TWindow* window);
 typedef TWindow *(* TGetWindow)(TPlayer* player);
 typedef TOccupancyWindow(* TGetOccupancyWindow)(TWindow *window);
+typedef float (* TGetLastPlaybackedObj)(TWindow *window);
+typedef float (* TGetPlaybackedTime)(TWindow *window);
+typedef float (* TGetRemainingPlayingTime)(TWindow *window);
+
+
+
 typedef unsigned int (* TGetNumberOfStoredObjectWindow)(TPlayer* player);
 
 struct player{
@@ -57,7 +70,7 @@ struct player{
 //2 janela
 
 	TBufferingPlayer buffering; //1
-	//TSchedulingPlayer scheluding; //1
+	TSchedulingPlayer scheluding; //1
 	TPlaybackPlayer playback; //1
 	TStallPlayer stall; //1//sugestao estatisticas
 	//TSetStoragePlayer setStorage;
@@ -98,7 +111,7 @@ struct window{
 
 	void *data;
 
-	TSchedulingPlayer scheluding;
+	TSchedulingWindow scheluding;
 	TIsFitInWindow isFitInWindow;
 	THasWindow has;
 	TShowWindow show;
@@ -108,10 +121,17 @@ struct window{
 	TGetSizeWindow getSize;
 
 	TGetOccupancyWindow getOccupancy;
+	TGetLastPlaybackedObj getLastPlaybackedObj;
+	TGetPlaybackedTime getPlaybackedTime;
+	TGetRemainingPlayingTime getRemainingPlayingTime;
+
 	TGetNumberOfStoredObjectWindow getNumberOfStoredObject;
 
 	TSetStorageWindow setStorage;
 	TSetOccupancyWindow setOccupancy;
+
+	TSetPlaybackedTime setPlaybackedTime;
+	TSetLastPlaybackedObj setLastPlaybackedObj;
 };
 
 
@@ -128,12 +148,7 @@ struct chunk{
 
 };
 
-//
-//Greedy
-typedef struct GreedyPolicy TGreedyPolicy;
-void *createGreedyPolicy(void *entry);
-short replaceGreedyPolicy(void* vSysInfo, void* cache, void* object);
-short updateGreedyPolicy(void* systemData,void* cache, void* object);
+
 
 // Politica generica
 // Policy related declaration
@@ -141,7 +156,8 @@ short updateGreedyPolicy(void* systemData,void* cache, void* object);
 typedef void TSWMPolicy;
 
 // General Policy stuff declaration
-typedef short (* TSWMReplaceGeneralPolicy)(void* systemData, void* cache, void* object);
+//typedef short (* TSWMReplaceGeneralPolicy)(void* systemData, void* cache, void* object);
+typedef void *(* TSWMReplaceGeneralPolicy)(void *peer, void *video, void *listPeers, void **picked, void *policy);
 typedef short (* TSWMUpdateGeneralPolicy)(void* systemData, void* cache, void* object);
 typedef short (* TSWMisFitInSwindowGeneralPolicy)(void* player, void* object);
 
@@ -156,7 +172,7 @@ typedef struct SWMGeneralPolicy TSWMGeneralPolicy;
 struct SWMGeneralPolicy{
 	TSWMReplaceGeneralPolicy Replace; // Object Management Policy Replacement(LRU/Popularity)
 	TSWMUpdateGeneralPolicy Update; // Object Management Policy Update cache(LRU/Popularity)
-	TSWMisFitInSwindowGeneralPolicy IsFitInSwindow; // Eligibility criteria
+	TSWMisFitInSwindowGeneralPolicy fitsInSwindow; // Eligibility criteria
 
 };
 
@@ -169,11 +185,13 @@ struct GeneralPolicySwm{
 //fim politica generica
 
 
-//short isFitInSwindowGreedyPolicy(void* player, void* object);
+//Greedy
+typedef struct GreedyPolicy TGreedyPolicy;
+void *createGreedyPolicy(void *entry);
+//void *replaceGreedyPolicy(void *peer, void *video, void *listPeers, void **picked);
+//short isFitInSwindowGreedyPolicy(void *player, void *object);
 
-
-
-
+short updateGreedyPolicy(void* systemData,void* cache, void* object);
 
 
 

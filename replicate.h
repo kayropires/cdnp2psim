@@ -19,7 +19,7 @@
 
 // Random Policy Replicate
 void *createReplicateRandom(char *pars);
-void RandomReplicate(hashTable,  community, systemData);
+void RandomReplicate(hashTable,community,systemData);
 
 
 // None Policy Replicate

@@ -114,6 +114,8 @@ typedef short (* THasHCache)(THCache *hc, void *object);
 typedef short (* TDisposeHCache)(THCache* hc);
 typedef void (* TShowHCache)(THCache* hc);
 typedef void* (*TSearchHCache)(THCache* hc, void *vObject, int levelInit, int levelEnd);
+typedef void* (*TSearchBiggerVersionHCache)(THCache* hc, void *vObject, int levelInit, int levelEnd);
+
 
 //typedef static TObject* searchObjectHCache(THCache* hc, TObject *vObject);
 //ypedef void (* TRemoveRepHCache)(THCache* hcache);
@@ -154,6 +156,8 @@ struct hcache{
 	TDisposeHCache dispose;
 	TShowHCache show;
 	TSearchHCache search;
+	TSearchBiggerVersionHCache searchBiggerVersion;
+
 	//TRemoveRepHCache removeRep;
 
 	//gets and sets

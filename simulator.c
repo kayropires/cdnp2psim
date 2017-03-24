@@ -271,7 +271,7 @@ void prefetch(TPeer* peer, unsigned int idPeer, THashTable* hashTable, TCommunit
 // Process Request from peers
 float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
 
-	TObject *video, *cloneVideo, *video2;
+	TObject *video, *cloneVideo,*picked=NULL;
 	TListObject *listEvicted;
 	TPeer *serverPeer;
 	TArrayDynamic *listPeers;
@@ -291,6 +291,8 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	dataSource = peer->getDataSource(peer);
 	video = dataSource->pick(dataSource); // Retornando sequencialmente o padrão de acesso !
+	picked = video;
+
 	//Aqui entra escalonador
 	//Perguntar do player do par, qual o proximo segmento.
 
@@ -303,36 +305,37 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	listPeers = community->searching(community,peer,video,idPeer, zero);
 
 	//chamada pra função de escalonamento
-	//serverPeer = peer->scheduling(peer,listPeers);
+	serverPeer = peer->schedulingWindow(peer, video, listPeers,&picked);
 
 	occup=listPeers->getOccupancy(listPeers);
-	if(occup==0){
+	/*if(occup==0){
 
 		serverPeer=NULL;
-	}
+	}*/
 
 	//chamar o escalonador
 	//Identificar na lista de pares, o serverPeer para fornecer o conteudo requisitado.
 
-	videoLength = getLengthObject(video);
+	videoLength = getLengthObject(picked);
+	//videoLength = getLengthObject(picked);
 
 	// for on-going request, update dispatch requests
 	addRequestStatsPeer( peer->getOnStats(peer), 1);
 
 	if (serverPeer == peer ){
 
-		peer->updateCache(peer, video, systemData);
+		peer->updateCache(peer, picked, systemData);
 		listEvicted = peer->getEvictedCache(peer);
 		hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
-		getIdObject(video, idVideo);
+		getIdObject(picked, idVideo);
 		//printf("Comecar a assistir da cache: %d %s\n", idPeer, idVideo);
 
 		//Looking UP peers into keepers
 	}else{
-		getIdObject(video, idVideo);
+		getIdObject(picked, idVideo);
 		if ( serverPeer != NULL ){
 			idServerPeer = serverPeer->getId(serverPeer);
-			serverPeer->updateCacheAsServer(serverPeer,video,systemData);
+			serverPeer->updateCacheAsServer(serverPeer,picked,systemData);
 
 			// updating hash table due to possible eviction that made room for the cached video
 			listEvicted = serverPeer->getEvictedCache(serverPeer);
@@ -340,18 +343,18 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 			//printf("Comecar a assistir: %d %s\n", idPeer, idVideo);
 			// Estabelecer canal de dados
-			serverPeer->openULVideoChannel(serverPeer, idPeer, video, 0.f);
-			peer->openDLVideoChannel(peer, idServerPeer, video, 0.f);
+			serverPeer->openULVideoChannel(serverPeer, idPeer, picked, 0.f);
+			peer->openDLVideoChannel(peer, idServerPeer, picked, 0.f);
 		} else{
 			//printf("Comecar a assistir do CDN: %d %s\n", idPeer, idVideo);
 
 			//try to insert missed video
-			cloneVideo=cloneObject(video);
+			cloneVideo=cloneObject(picked);
 			if ( peer->insertCache( peer, cloneVideo , systemData, lPrincipal ) ){
-				getIdObject(video, idVideo);
+				getIdObject(picked, idVideo);
 
 				item = createItemHashTable();
-				item->set(item, idPeer, peer, idVideo, video);
+				item->set(item, idPeer, peer, idVideo, picked);
 				hashTable->insert(hashTable, item);
 				item->dispose(item);
 
@@ -464,6 +467,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 	TPlayer *player;
 
 	float videoLength;
+	float lengthObj=0;
 	float hitRate=0, missRate=0, byteHitRate, byteMissRate, hitRateCom;
 	unsigned long int totalRequests=0;
 	//unsigned long int clock = 0;
@@ -715,13 +719,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		//}else if ((typeEvent == REPLICATE) && (peer->isUp(peer)) ){
 		}else if ( (typeEvent == BUFFERING) ){
 
-			//processBuffering(idPeer, hashTable, community, sysInfo);
-
-			//Inserir aqui o processo de Bufferizacao;
-
 			player->buffering(idPeer, hashTable, community, sysInfo);
 
-			//Queuing A Request event based on video length and the user thinking time
 			timeEvent = clock + 2;
 			event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 			queue->enqueue(queue, timeEvent, event);
@@ -730,15 +729,14 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		//}else if ((typeEvent == REPLICATE) && (peer->isUp(peer)) ){
 		}else if ( (typeEvent == PLAYBACK) ){
 
-			//processPlayback(hashTable,community,sysInfo);
 
-			player->playback(player);
-
-
+			lengthObj=player->playback(player,hashTable, peer,sysInfo);
+			if(lengthObj!=0){
 			//event based on playback chunk length
-			timeEvent = clock + 2;//@ ajustar o tempo de reproducao
+			timeEvent = clock + lengthObj;//@ ajustar o tempo de reproducao
 			event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 			queue->enqueue(queue, timeEvent, event);
+			}
 
 			// chamada pro escalonamento.
 

@@ -28,6 +28,7 @@ static void showHCache(THCache *hc, int levels);
 //static void* searchObjectHCache(THCache* hc, void *vObject);
 //static void* searchObjectHCache(THCache* hc, TObject *vObject);
 static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
+static void* searchBiggerVersionHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
 
 //static void removeRepHCache(THCache *hc, int levels, int levels);
 
@@ -111,6 +112,7 @@ THCache *createHCache(int levels){
 	//sets and gets
 	hc->show = showHCache;
 	hc->search=searchObjectHCache;
+	hc->searchBiggerVersion=searchBiggerVersionHCache;
 	//hc->removeRep = removeRepHCache;
 	hc->dispose = disposeHCache;
 	hc->has = hasHCache;
@@ -133,7 +135,7 @@ THCache *createHCache(int levels){
 
 }
 
-static short insertHCache(THCache *hc, int levels, void *object, void* systemData){
+static short insertHCache(THCache *hc, int levels, void *object, void *systemData){
 	short status;
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
@@ -355,6 +357,32 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 	}
 	return storedObject;
 }
+//
+
+static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelInit, int levelEnd){ //@
+	TDataHCache *data = hc->data;
+	TCache *cache;
+	int i;
+	TObject *storedObject=NULL;
+	TListObject *listObject;
+
+	i=levelInit;
+	if (levelInit < 0 || levelInit >  levelEnd) {
+		printf("hierarchy.c:searchObjectHCache,Erro: Incorrect search range \n");
+		exit (0);
+	}else{
+		while(i<levelEnd && storedObject == NULL){
+			cache=data->hcache[i];
+
+			listObject = cache->getObjects(cache);
+			storedObject = listObject->getBiggerVersion(listObject, object);//
+
+			i++;
+		}
+	}
+	return storedObject;
+}
+
 //
 
 static void addAvailabilityHCache(THCache* hc, int levels, TAvailabilityHCache amount){

@@ -366,20 +366,7 @@ static short insertCachePeer(TPeer *peer, void *vObject, void *vSystemData, int 
 	TSystemInfo *systemData = vSystemData;
 	TDataPeer *datapeer = peer->data;
 	THCache *hc = datapeer->hc;
-	TCache *cache=hc->getCache(hc,levels);
-/*
-	int levelPrincipal;
-	levelPrincipal=hc->getLevelPrincipal(hc); //@
-*/
 
-	//Record a miss
-	//TStatsCache *statsCache = hc->getStats(hc,levels);
-	/*TStatsCache *statsCache = cache->getStats(cache);
-
-	statsCache->addMiss(statsCache, 1);
-	statsCache->addByteMiss(statsCache, getLengthObject(video) );*/
-
-	//try to insert missed video
 	return hc->insert( hc,levels, video, systemData ) ;
 
 
@@ -797,6 +784,19 @@ static short hasCachedPeer(TPeer* peer, void *object){
 	//return (data->status == DOWN_PEER);
 }
 
+//
+static void *hasCachedBiggerVersionPeer(TPeer *peer, TObject *object, void *picked){
+	TDataPeer *data = peer->data;
+	THCache *hc = data->hc;
+	int levelInit=0, levelEnd=hc->getLevels(hc);
+
+	return hc->searchBiggerVersion(hc, object, levelInit, levelEnd);
+
+}
+
+//
+
+
 static short canStreamPeer(TPeer* peer, void *object, unsigned int clientId, float prefetchFraction){ //@
 	TDataPeer *data = peer->data;
 	//THCache *hcache = data->hcache;
@@ -894,6 +894,8 @@ static void showMapQueryPeer(TPeer* peer){
 	it->ufree(it);
 }
 
+
+
 static void showChannelsInfoPeer(TPeer* peer){
 	unsigned int peerId;
 	TDataPeer *data = peer->data;
@@ -951,6 +953,18 @@ static void showChannelsInfoPeer(TPeer* peer){
 	}
 }
 
+
+TPeer* schedulingWindowPeer(TPeer* peer, void *video,void* listPeer, TObject **picked){
+	TPlayer *player;
+	TPeer *ServerPeer;
+	player=peer->getPlayer(peer);
+
+	ServerPeer=player->scheluding(peer,video, listPeer,picked);
+
+	return ServerPeer;
+}
+
+
 TPeer* createPeer(unsigned int id,  short tier, void *dynamicJoin, void *dynamicLeave, void *dynamicRequest, void *dataSource, void *replicate, void *hcache, void *topo, void *channel){
     TPeer *p = (TPeer*)malloc(sizeof(TPeer));
 
@@ -986,6 +1000,7 @@ TPeer* createPeer(unsigned int id,  short tier, void *dynamicJoin, void *dynamic
     p->setupJoining = setupJoiningPeer;
     p->setStartSession = setStartSessionPeer;
     p->hasCached = hasCachedPeer;
+    p->hasCachedBiggerVersion = hasCachedBiggerVersionPeer;
     p->hasDownlink = hasDownlinkPeer;
 
     p->openULVideoChannel = openULVideoChannelPeer;
@@ -1023,6 +1038,9 @@ TPeer* createPeer(unsigned int id,  short tier, void *dynamicJoin, void *dynamic
     p->updateRequestsMapQuery = updateRequestsMapQueryPeer;
     p->showMapQuery = showMapQueryPeer;
     p->showChannelsInfo = showChannelsInfoPeer;
+
+    //scheduling
+    p->schedulingWindow = schedulingWindowPeer;
 
     return p;
 }

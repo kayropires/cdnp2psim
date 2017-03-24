@@ -123,19 +123,19 @@ void showObject(TObject *p) {
 	TDataObject *data = p->data;
 
 	printf("%s ", data->id);
-	printf("%s ", data->version);
-	printf("%s ", data->chunkNumber);
-	printf("%f ", data->length);
+	printf("%d ", data->version);
+	printf("%ld ", data->chunkNumber);
+	printf("%0.3f ", data->length);
 	printf("%d ", data->lengthBytes);
-	printf("%f ", data->stored);
-	printf("%d ", data->replicado);
-	printf("%d ", data->bitRate);
-	printf("%d ", data->lPopularity);
-	printf("%f ", data->accessFrequency);
-	printf("%lu ", data->lastAccess);
-	printf("%f ", data->cumulativeValue);
-	printf("%f ", data->normalizedByteServed);
-	printf("%f ", data->bitRate);
+	//printf("%f ", data->stored);
+	//printf("%d ", data->replicado);
+	//printf("%f ", data->bitRate);
+	//printf("%d ", data->lPopularity);
+	//printf("%f ", data->accessFrequency);
+	//printf("%lu ", data->lastAccess);
+	//printf("%f ", data->cumulativeValue);
+	//printf("%f ", data->normalizedByteServed);
+
 	printf("\n");
 }
 
@@ -192,7 +192,7 @@ int getLengthBytesObject(TObject *object) {
 	return data->lengthBytes;
 }
 
-int getStoredObject(TObject *object) {
+float getStoredObject(TObject *object) {
 	TDataObject *data = object->data;
 	return data->stored;
 }
@@ -234,6 +234,11 @@ float getNormalizedByteServedObject(TObject *object) {
 void getIdObject(TObject *object, TIdObject id) {
 	TDataObject *data = object->data;
 	strcpy(id, data->id);
+}
+
+long int getChunkNumber(TObject *object) {
+	TDataObject *data = object->data;
+	return data->chunkNumber;
 }
 
 float getBitRateObject(TObject *object) {
@@ -317,13 +322,37 @@ short isEqualObject(TObject *first, TObject *second) {
 short isEqualObjectSegment(TObject *first, TObject *second) {
 	TDataObject *dataFirst = first->data;
 	TDataObject *dataSecond = second->data;
-	int status=0;
+	short status=0;
 
 	if(dataFirst->chunkNumber==dataSecond->chunkNumber){
 		status=1;
 	}
 	return status;
 }
+
+short isBiggerObjectSegment(TObject *object,long int bigger) {
+	TDataObject *data = object->data;
+
+	short status=0;
+
+	if(data->lengthBytes > bigger){
+		status=1;
+	}
+	return status;
+}
+
+short isHigher(TObject *first, TObject *second) {
+	TDataObject *dataFirst = first->data;
+	TDataObject *dataSecond = second->data;
+	short status=0;
+
+	if(dataFirst->version<dataSecond->version){
+		status=1;
+	}
+	return status;
+}
+
+
 
 
 short isReplicatedObject(TObject *object) {
@@ -568,6 +597,7 @@ static void insertTailListObject(TListObject *listObject, void *newComer) {
 	TDataListObject *dataListObject = listObject->data;
 
 	elem->prev = dataListObject->tail;
+	elem->next = NULL;
 	elem->object = newComer;
 
 	if (dataListObject->head == NULL )
@@ -576,7 +606,7 @@ static void insertTailListObject(TListObject *listObject, void *newComer) {
 		dataListObject->tail->next = elem;
 
 	dataListObject->tail = elem;
-
+   // elem->
 	dataListObject->holding++;
 
 }
@@ -982,6 +1012,37 @@ static void* getObjectSegmentListObject(TListObject *listObject, void* object) {
 
 	return (found?walk->object:NULL);
 }
+
+//
+static void *getBiggerVersionSegmentListObject(TListObject *listObject, void *object) {
+	TElemListObject *walk;
+	TObject *picked;
+	long int bigger=0;
+	short found = 0;
+	TDataListObject *dataListObject = listObject->data;
+	TDataObject *data;
+
+	walk = dataListObject->head;
+
+	while (walk != NULL) {
+		if ( isEqualObjectSegment(walk->object, object) ){
+
+			if(isBiggerObjectSegment(walk->object, bigger)){
+				picked=walk->object;
+				data=picked->data;
+				bigger = data->lengthBytes;
+			}
+
+			found = 1;
+		}
+		//else{
+			walk = walk->next;
+		//}
+
+
+	}
+	return (found?picked:NULL);
+}
 //
 static void* getObjectListObject(TListObject *listObject, void* object) {
 	TElemListObject *walk;
@@ -1049,6 +1110,7 @@ TListObject *createListObject() {
 	listObject->remove = removeListObject;
 	listObject->getObject = getObjectListObject;
 	listObject->getObjectSegment = getObjectSegmentListObject;
+	listObject->getBiggerVersion = getBiggerVersionSegmentListObject;
 	listObject->getNext = getNextListObject;
 	listObject->getHead = getHeadListObject;
 	listObject->getTail = getTailListObject;

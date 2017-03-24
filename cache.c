@@ -13,6 +13,7 @@
 #define MIN(x,y) (x<y?x:y)
 
 static short insertCache(TCache *cache, void *object, void* systemData);
+static short removeCache(TCache *cache, void *object, void* systemData);
 static short updateCache(TCache *cache, void *object,void* systemData);
 static short isCacheableCache(TCache *cache, void *object, void* systemData);
 static void* firstKCache(TCache* cache, int K);
@@ -62,6 +63,7 @@ TCache *createCache(TSizeCache size, TOMPolicy *policy ){
 
 	cache->firstK=firstKCache;
 	cache->insert=insertCache;
+	cache->remove=removeCache;
 	cache->update=updateCache;
 	cache->isCacheable=isCacheableCache;
 
@@ -94,13 +96,24 @@ static short insertCache(TCache *cache, void *object, void* systemData){
 
 	status = policy->OM->Replace(systemData, cache, object);
 
-	// if (status)
-		//    printf("Well done!\n");
-	//else
-	//    printf("Got problems to insert\n");
+	return status;
+}
+
+//
+static short removeCache(TCache *cache, void *object, void* systemData){
+	short status;
+	TDataCache *data = cache->data;
+	TGeneralPolicy *policy = data->policy;
+/*
+	TListObject *disposed = data->disposed;
+	disposed->cleanup(disposed);*/
+
+	status = policy->OM->Remove(systemData, cache, object);
 
 	return status;
 }
+
+//
 
 static short updateCache(TCache *cache, void *object, void* systemData){
 	short status;
@@ -918,6 +931,7 @@ typedef struct OMFIFOPolicy TOMFIFOPolicy;
 struct OMFIFOPolicy{
 	//
 	TOMReplaceGeneralPolicy Replace; // Object Management Policy Replacement(FIFO/Popularity)
+	TOMRemoveGeneralPolicy Remove;
 	TOMUpdateGeneralPolicy Update; // Object Management Policy Update cache(FIFO/Popularity)
 	TOMCacheableGeneralPolicy Cacheable; // Object Management Policy Eligibility
 
@@ -943,6 +957,7 @@ void *createFIFOPolicy(void *entry){
 
 	// init dynamics
 	policy->OM->Replace = replaceFIFOPolicy; // Object Management Policy Replacement(FIFO/Popularity)
+	policy->OM->Remove = removeFIFOPolicy;
 	policy->OM->Update = updateFIFOPolicy; // Object Management Policy Update cache(FIFO/Popularity)
 	//policy->OM->FirstK = firstKFIFOPolicy;
 	policy->OM->Cacheable = cacheableFIFOPolicy;
@@ -975,11 +990,11 @@ void* firstKFIFOPolicy(TCache* cache, int k){
 }
 
 //Returns a status that points out whether or not
-short replaceFIFOPolicy(void* vSysInfo, TCache* cache, void* object){
+short replaceFIFOPolicy(void* vSysInfo, TCache* cache, void *obj){
 	TSystemInfo *sysInfo = vSysInfo;
 	short status = 0;
 	float length;
-	TObject *head, *disposed;
+	TObject *head, *disposed,*object=obj;
 	TDataCache *data = cache->data;
 	TListObject *listObject = data->objects;
 
@@ -999,8 +1014,9 @@ short replaceFIFOPolicy(void* vSysInfo, TCache* cache, void* object){
 		}
 
 		//setLastAccessObject(object,sysInfo->getTime(sysInfo));
-
+		//object->next
 		listObject->insertTail(listObject, object);
+
 
 		data->availability -= length;
 	}
@@ -1009,6 +1025,37 @@ short replaceFIFOPolicy(void* vSysInfo, TCache* cache, void* object){
 
 	return status;
 }
+
+//Metodo de remocao
+short removeFIFOPolicy(void* vSysInfo, TCache* cache, void* object){
+	TSystemInfo *sysInfo = vSysInfo;
+	short status = 0;
+
+	TObject *head, *disposed;
+	TDataCache *data = cache->data;
+	TListObject *listObject = data->objects;
+
+
+
+
+			head = listObject->getHead(listObject);
+			if(head!=NULL){
+			data->availability += getLengthObject(head);
+			// updating list of disposed objects
+			// client could use it and has to clean up it
+			disposed = cloneObject(head);
+			data->disposed->insertHead(data->disposed, disposed);
+
+			listObject->removeHead(listObject);
+			status=1;
+			}
+
+
+	return status;
+}
+
+//
+
 
 //Returns a status that points out whether or not
 short updateFIFOPolicy(void* xSysInfo, TCache* cache, void* object){
@@ -1575,7 +1622,7 @@ short replacePARTIALPolicy(void* systemData, TCache* cache, void* object){
 		// need to be reviewed
 		// we had to reassure that the minimum object size in 10secs, see
 		// InitCatalogObject in this file.
-		segmentSize = (int)(length*dataPolicy->minimumSegmentFaction);
+		segmentSize = (float)(length*dataPolicy->minimumSegmentFaction);
 
 		segmentSizeDemand = segmentSize;
 
@@ -1649,7 +1696,7 @@ short updatePARTIALPolicy(void* systemData, TCache* cache, void* object){
 	// need to be reviewed
 	// we had to reassure that the minimum object size in 10secs, see
 	// InitCatalogObject in this file.
-	segmentSize = (int)(length*dataPolicy->minimumSegmentFaction);
+	segmentSize = (float)(length*dataPolicy->minimumSegmentFaction);
 
 	if (segmentSize == 0){
 		printf("Error: segment size of object");

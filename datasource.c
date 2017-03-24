@@ -20,7 +20,7 @@ struct _data_playlist {
 	char onwer[50];
 	int duration;
 	int inCollection;
-	int length;
+	float length;
 	int countHint;
 	char published[25];
 	char updated[25];
@@ -31,11 +31,11 @@ struct _data_playlist {
 
 typedef int (*TDurationPlaylist)(TPlaylist *);
 typedef int (*TFirstkDurationPlaylist)(TPlaylist *, int);
-typedef int (*TLengthPlaylist)(TPlaylist *);
+typedef float (*TLengthPlaylist)(TPlaylist *);
 typedef void *(*TNextPlaylist)(TPlaylist *);
 typedef void *(*TNextPrefetchPlaylist)(TPlaylist *);
 typedef TPlaylist *(*TClonePlaylist)(TPlaylist *);
-static TPlaylist* initPlaylist(char *id, char *owner, int duration, int length,
+static TPlaylist* initPlaylist(char *id, char *owner, int duration, float length,
 		int countHint, char *published, char *updated, void** objects);
 
 struct playlist {
@@ -113,7 +113,7 @@ static void disposePlaylist(TPlaylist *src) {
 
 }
 
-static TPlaylist* initPlaylist(char *id, char *owner, int duration, int length,
+static TPlaylist* initPlaylist(char *id, char *owner, int duration, float length,
 		int countHint, char *published, char *updated, void** objects) {
 	struct _data_playlist *data = malloc(sizeof(struct _data_playlist));
 	TPlaylist *pl = malloc(sizeof(TPlaylist));
@@ -175,8 +175,8 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 	char idVideo[400];
 	char xuploaded[26];
 	xuploaded[0] = '\0';
-	int bitRate,version, chunkNumber, min, sec, ms, lengthBytes;//@_05/10
-	float length;
+	int bitRate,version, chunkNumber, lengthBytes;//@_05/10
+	float length, min, sec, ms;
 	int stars;
 	//float ratings;
 
@@ -194,7 +194,10 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 
 	objects = newCatalogObject(size);
 
-	fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,	&lengthBytes, xuploaded);
+	fscanf(fp, "%s %d %d %f %f %f %d %d", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+	//fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,	&lengthBytes, xuploaded);
+
+
 	//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
 	while (!feof(fp) && (i < size)) {
 
@@ -215,8 +218,8 @@ static TFromCollectionDataCatalog *initFromCollectionDataCatalog(char *filename,
 
 		i++;
 		//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
-		fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,
-				&lengthBytes, xuploaded);
+		fscanf(fp, "%s %d %d %f %f %f %d %d", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+
 	}
 
 	if (size > i) {
@@ -602,7 +605,7 @@ void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int 
 	// pick one video from catalog
 
 	unsigned int i,j=1,h;
-	long int c;
+	//long int c;
 
 	TDataCatalog *dataCatalog = dataSource->datacatalog;
 	TFromCollectionDataCatalog *data = dataCatalog->data;
@@ -623,6 +626,7 @@ void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int 
 	addLPopularityObject(objects[i]);
 
 	obj = cloneObject(objects[i]);
+	//showObject(obj);
 	setLPopularityObject(obj, 0);
 
 	return obj;
@@ -888,11 +892,11 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 	FILE* fp;
 
 	char idVideo[400];
-	char xuploaded[26];
-	xuploaded[0] = '\0';
-	int bitRate,version,chunkNumber, min, sec, ms, lengthBytes;//@_05/10
-	float length;
-	int stars;
+	//char xuploaded[26];
+	//xuploaded[0] = '\0';
+	int bitRate,version,chunkNumber, lengthBytes;//@_05/10
+	float length, min, sec, ms;
+	//int stars;
 	//float ratings;
 
 	long int i = 0;
@@ -909,7 +913,9 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 
 	objects = newCatalogObject(size);
 
-	fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+	//fscanf(fp, "%s %d %d %f %f %f %d %d", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+	fscanf(fp, "%s %d %d %f %f %f %d %d", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+
 	//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
 	while (!feof(fp) && (i < size)) {
 
@@ -918,6 +924,7 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 		length = (min * 60*1000 + sec +((float)ms/1000));//Tamanho em tempo de milissegundos
 
 		objects[i] = initObject(idVideo, version, chunkNumber, length,lengthBytes, bitRate);
+		//showObject(initObject(idVideo, version, chunkNumber, length,lengthBytes, bitRate));
 		setStoredObject(objects[i], length);
 		//setLPopularityObject(objects[i], 0);
 		//setUploadObject(objects[i], xuploaded);
@@ -927,13 +934,16 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 		setNormalizedByteServedObject(objects[i], 0.0);
 
 		setBitRateObject(objects[i], 128.f);
+		//showObject(objects[i]);
 
 		i++;
 		//fscanf(fp, "%s %d %d %d %d %f", idVideo, &min, &sec, &views,  &stars, &ratings);
 		//fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &min, &sec, &ms, &bitRate, &stars,	&lengthBytes, xuploaded);
-		fscanf(fp, "%s %d %d %d %d %d %d %s", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+		//fscanf(fp, "%s %d %d %f %f %f %d %d", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
+		fscanf(fp, "%s %d %d %f %f %f %d %d", idVideo, &version, &chunkNumber, &min, &sec, &ms, &bitRate, &lengthBytes);
 		//teste
-		printf("%s \n",idVideo);
+		//printf("%s \n",idVideo);
+
 	}
 
 	if (size > i) {
