@@ -34,6 +34,7 @@ unsigned long int getLastAccessObject(TObject *object);
 float getAccessFrequencyObject(TObject *object);
 void getIdObject(TObject *object, char* id);
 long int getChunkNumber(TObject *object);
+int getFoundLevelObject(TObject *object);
 float getRatingObject(TObject *object);
 char* getUploadObject(TObject * object);
 float getNormalizedByteServedObject(TObject *object);

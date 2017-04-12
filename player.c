@@ -45,6 +45,7 @@ static short swapStorageSwindow(TPlayer *player);
 //static THCache *getLevelStoragePlayer(TPlayer *player);
 static short getLevelStorageWindow(TWindow *window);
 //static TSizeWindow getSizeWindow(TPlayer *player);
+static float getDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes);
 
 
 ////prototipos de funcoes Window
@@ -52,16 +53,24 @@ static short getLevelStorageWindow(TWindow *window);
 //static short schedulingChunk(long int chunkNumber, TWindow *window, void *listPeer);
 static void *schedulingChunk(TPeer *peer, void *video, void *listPeer,void **picked);
 
-static short isFitInWindow(TWindow *window, TObject *object);
+//static short isFitInWindow(TWindow *window, TObject *object);
 static void setOccupancyWindow(TWindow *window, float lenghtObject);
+static void setOccupBufferWindow(TWindow *window, float lenghtObject);
+
 static void setPlaybackedTimeWindow(TWindow *window, float lenghtObject);
-static void setLastPlaybackedObjWindow(TWindow *window, float lenghtObject);
+static void setLastPlaybackedObjWindow(TWindow *window, long int numberObject);
+static void setLastChunkAvailableWindow(TWindow *window, long int objectNumber);
 static TSizeWindow getSizeWindow(TWindow *window);
-static float getLastPlaybackedObjWindow(TWindow *window);
+static long int getLastPlaybackedObjWindow(TWindow *window);
+static long int getLastChunkAvailableWindow(TWindow *window);
 static float getPlaybackedTimeWindow(TWindow *window);
 static float getRemainingPlayingTimeWindow(TWindow *window);
-static TWindow *getWindow(TPlayer *player);
+static TWindow *getWindowPlayer(TPlayer *player);
 static TOccupancyWindow getOccupancyWindow(TWindow *window);
+static TBufferWindow getBufferWindow(TWindow *window);
+static TOccupBufferWindow getOccupBufferWindow(TWindow *window);
+
+
 static unsigned int getNumberOfStoredObjectWindow(TWindow *window);
 static void showWindow(TWindow *window);
 static short hasWindow(TWindow *window, void *object);
@@ -71,7 +80,8 @@ static TAvailabilityWindow getAvailabilityWindow(TWindow *window);
 
 //
 void *replaceGreedyPolicy(TPeer *peer, TObject *video, TArrayDynamic *listPeers, TObject **picked,TGeneralPolicySwm *policy);
-short fitsInSwindowGreedyPolicy(TPlayer *player, TObject **object);
+//short fitsInSwindowGreedyPolicy(void *player, void **object);
+short fitsInSwindowGreedyPolicy(TPlayer* player, TObject** object);
 //
 
 typedef struct _data_player TDataPlayer; //
@@ -100,8 +110,11 @@ struct _data_window{
 	TSizeWindow size; // in seconds)
 	float occupancy;
 	float playbackedTime;
-	float lastPlaybackedObj;
+	long int lastPlaybackedObj;
+	long int lastChunkAvailable;
 	short lStorage;
+	float buffer;
+	float occupBuffer;
 
 	TArrayDynamic **scheduledChunks;//alterar para tipo array dinamico que aponta para lista circular
 	void *policy;
@@ -111,10 +124,13 @@ static TDataWindow *initDataWindow(TSizeWindow size, void *policy ){
 	TDataWindow *data = malloc(sizeof(TDataWindow));
 
 	data->size = size;
-	data->occupancy = 0.0;
-	data->playbackedTime=0.0;
-	data->lastPlaybackedObj=0.0;
+	data->occupancy = 0;
+	data->playbackedTime=0;
+	data->lastPlaybackedObj=-1;
+	data->lastChunkAvailable=-1;
 	data->lStorage = 2;
+	data->buffer = size;
+	data->occupBuffer = 0;
 	data->policy = policy;
 	return data;
 }
@@ -125,7 +141,7 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 
 	//window->request = requestChunk;		 // dispara requição/requisições
 	window->scheluding = schedulingChunk;		 // escalona segmentos
-	window->isFitInWindow = isFitInWindow; 		//verifica se item cabe no tempo da janela
+	//window->isFitInWindow = isFitInWindow; 		//verifica se item cabe no tempo da janela
 	window->show = showWindow;
 	window->has = hasWindow;
 
@@ -134,7 +150,10 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 	window->getSize = getSizeWindow;
 	window->getLevelStorage = getLevelStorageWindow;
 	window->getOccupancy = getOccupancyWindow;
+	window->getBuffer = getBufferWindow;
+	window->getOccupBuffer = getOccupBufferWindow;
 	window->getLastPlaybackedObj = getLastPlaybackedObjWindow;
+	window->getLastChunkAvailable = getLastChunkAvailableWindow;
 	window->getPlaybackedTime = getPlaybackedTimeWindow;
 	window->getRemainingPlayingTime = getRemainingPlayingTimeWindow;
 
@@ -143,8 +162,10 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 	//sets
 	window->setStorage = setStorageWindow;
 	window->setOccupancy = setOccupancyWindow;
+	window->setOccupBuffer = setOccupBufferWindow;
 	window->setPlaybackedTime = setPlaybackedTimeWindow;
 	window->setLastPlaybackedObj = setLastPlaybackedObjWindow;
+	window->setLastChunkAvailable = setLastChunkAvailableWindow;
 
 	return window;
 }
@@ -161,7 +182,8 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 	player->playback = playbackWindow;	 	//reproduz janela ( o que houver disponivel )
 	player->stall = stallPlayback;		// parada por falta de segmentos a reproduzir
 	player->swapStorage = swapStorageSwindow; 		//troca os objetos de nivel de cache apos reproducao
-	player->getWindow = getWindow;
+	player->getWindow = getWindowPlayer;
+	player->getDownTime = getDownTimeChunk;
 	//player->show = showWindow;
 	//player->has = hasWindow;
 	//gets
@@ -184,7 +206,7 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 //Functions Player
 
 static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
-	TObject *video, *cloneVideo;
+	TObject *video;
 	TListObject *listEvicted;
 	//TPeer *serverPeer;
 	//TArrayDynamic *listPeers;
@@ -195,24 +217,29 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 	TWindow *window;
 	int version=6;
 	long int segment=0;
+	float buffer=0, occupBuffer;
+	short lStorage;
+
 	//float sizeWindow;
 	TPeer *peer = community->getPeer(community, idPeer);
 	player = peer->getPlayer(peer);
 	window = player->getWindow(player);
+	buffer = window->getBuffer(window);
 
-	short lStorage=window->getLevelStorage(window);
+
+	lStorage=window->getLevelStorage(window);
 	dataSource = peer->getDataSource(peer);
 	//sizeWindow = window->getSize(window);
 
 	video = dataSource->pickFromAdaptive(dataSource,version,segment);
 
-	while(window->getAvailability(window) >= getLengthObject(video)){
+	while((buffer-(window->getOccupBuffer(window))) >= getLengthObject(video)){
 
-		window->setOccupancy(window, getLengthObject(video));
-		cloneVideo=cloneObject(video);
+
+		//cloneVideo=cloneObject(video);
 
 		//############# verificar se a hash já é atualizada no insert ########
-		if ( peer->insertCache( peer, cloneVideo , systemData, lStorage ) ){
+		if ( peer->insertCache( peer, cloneObject(video) , systemData, lStorage ) ){
 			//insert array
 			getIdObject(video, idVideo);
 
@@ -223,9 +250,15 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 
 			// updating hash table due to evicting that made room for the cached video
 			listEvicted = peer->getEvictedCache(peer);
-
 			hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 
+			//
+			//window->setOccupancy(window, getLengthObject(video));
+			window->setOccupBuffer(window, getLengthObject(video));
+			window->setLastChunkAvailable(window,segment);
+
+		}else{
+			printf("PANIC: Error on Buffering procedure \n");
 		}
 
 		segment++;
@@ -249,13 +282,12 @@ static void *schedulingWindow(TPeer *peer, void *video, void *listPeer,void **pi
 	return ServerPeer;
 }
 
-static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData){
+/*static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData){
 	//TDataPlayer *data = player->data;
 	short status=0;
 	float playbackTime,stallTime,spentTime,lengthCurrentObject=0, lengthLastObj=0;
-	TWindow *window;
-	window=player->getWindow(player);
-	TDataWindow *dataWindow=window->data;
+	TWindow *window=player->getWindow(player);
+	//TDataWindow *dataWindow=window->data;
 	THCache *hc=peer->getHCache(peer);
 	TCache *storage;
 
@@ -277,7 +309,7 @@ static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,T
 
 		lengthCurrentObject=getLengthObject(head);
 
-		hc->insert(hc,levelPrincipal,head,systemData);//swap obj for principal level
+		hc->insert(hc,levelPrincipal,cloneObject(head),systemData);//swap obj for principal level
 
 		getIdObject(head, idVideo);
 
@@ -291,8 +323,9 @@ static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,T
 		hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 
 		status = storage->remove(storage,head,systemData);
-
-		dataWindow->occupancy-=lengthCurrentObject;
+		//window->setOccupancy(window,-lengthCurrentObject);
+		window->setOccupBuffer(window,-lengthCurrentObject);
+		//dataWindow->occupancy-=lengthCurrentObject;
 
 
 	}else{
@@ -309,6 +342,75 @@ static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,T
 	return lengthCurrentObject;
 
 
+}*/
+
+static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData){
+
+
+	TDataSource *dataSource;
+	THCache *hc;
+	TCache *cache;
+	TWindow *window=player->getWindow(player);
+	int i,levelInit,levelEnd,levelStorage,bigger=0;
+	long int lastPlaybackedObject;
+	TObject *storedObject=NULL, *auxObject,*aux2;
+	TListObject *listObject;
+	float lengthObject=0;
+
+	/*Initiator*/
+	hc=peer->getHCache(peer);
+	levelInit=0;
+	levelEnd=hc->getLevels(hc);
+	levelStorage=hc->getLevelStorage(hc);
+	lastPlaybackedObject = window->getLastPlaybackedObj(window);
+	dataSource = peer->getDataSource(peer);
+
+	i=levelInit;
+
+	if(lastPlaybackedObject<6133){
+		auxObject = dataSource->pickFromAdaptive(dataSource,0,lastPlaybackedObject+=1);
+		aux2 = auxObject;
+
+		while(i<levelEnd){
+
+
+			cache=hc->getCache(hc,i);
+			listObject = cache->getObjects(cache);
+			if(listObject!=NULL){
+				auxObject = listObject->getBiggerVersion(listObject, auxObject);//
+				if(auxObject!=NULL){
+					if(getLengthBytesObject(auxObject) > bigger){
+						bigger=getLengthBytesObject(auxObject);
+						storedObject=auxObject;
+						aux2=storedObject;
+						setFoundLevelObject(storedObject,i);
+					}
+
+				}else{
+					if(aux2!=NULL){
+						auxObject=aux2;
+					}
+				}
+			}
+
+			i++;
+		}
+	}else{
+
+		printf(" Video played completely!\n");
+	}
+
+	if(storedObject!=NULL){
+		lengthObject = getLengthObject(storedObject);
+		window->setPlaybackedTime(window,lengthObject);
+		if(window->getOccupancy(window)>0)
+		window->setOccupancy(window,-lengthObject);
+		window->setLastPlaybackedObj(window,lastPlaybackedObject);
+
+	}
+
+
+	return lengthObject;
 }
 
 static short stallPlayback(TPlayer *player){
@@ -325,11 +427,29 @@ static short swapStorageSwindow(TPlayer *player){
 	return status;
 }
 
-static TWindow *getWindow(TPlayer *player){
+static TWindow *getWindowPlayer(TPlayer *player){
 	TDataPlayer *data = player->data;
 
 		return data->window;
 }
+
+
+static float getDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes){
+	//TDataPlayer *data = player->data;
+	TChannel *channel;
+	TLink *downLink;
+	float CurrentDownRate,downTime ;
+
+
+		channel = peer->getChannel(peer);
+		downLink = channel->getDownLink(channel);
+		CurrentDownRate = downLink->getCurrentRate(downLink);
+
+		downTime = (lengthBytes/1000)/CurrentDownRate;
+
+		return downTime;
+}
+
 
 
 //############################################################################
@@ -354,7 +474,7 @@ static void *schedulingChunk(TPeer *peer, void *video, void *listPeer,void **pic
 }
 
 
-static short isFitInWindow(TWindow *window, TObject *object){
+/*static short isFitInWindow(TWindow *window, TObject *object){
 	short status=0;
 	TDataWindow *dataWindow=window->data;
 	//TDataPlayer *data = player->data;
@@ -363,7 +483,7 @@ static short isFitInWindow(TWindow *window, TObject *object){
 	//status = policy->WM->isFitInSwindow(systemData, cache, object);
 
 	return status;
-}
+}*/
 
 
 static void setStorageWindow(TWindow *window, short storage){
@@ -381,6 +501,17 @@ static void setOccupancyWindow(TWindow *window, float lenghtObject){
 
 	dataWindow->occupancy+=lenghtObject;
 }
+
+//
+static void setOccupBufferWindow(TWindow *window, float lenghtObject){
+/*	TDataPlayer *data = player->data;
+	TWindow *window = data->window;*/
+	TDataWindow *dataWindow=window->data;
+	//window->setOccupancy(lenghtObject);
+
+	dataWindow->occupBuffer+=lenghtObject;
+}
+
 //
 static void setPlaybackedTimeWindow(TWindow *window, float lenghtObject){
 /*	TDataPlayer *data = player->data;
@@ -392,14 +523,24 @@ static void setPlaybackedTimeWindow(TWindow *window, float lenghtObject){
 }
 //
 
-static void setLastPlaybackedObjWindow(TWindow *window, float lenghtObject){
+static void setLastPlaybackedObjWindow(TWindow *window, long int objectNumber){
 /*	TDataPlayer *data = player->data;
 	TWindow *window = data->window;*/
 	TDataWindow *dataWindow=window->data;
 	//window->setOccupancy(lenghtObject);
 
-	dataWindow->lastPlaybackedObj=lenghtObject;
+	dataWindow->lastPlaybackedObj=objectNumber;
 }
+//
+static void setLastChunkAvailableWindow(TWindow *window, long int objectNumber){
+/*	TDataPlayer *data = player->data;
+	TWindow *window = data->window;*/
+	TDataWindow *dataWindow=window->data;
+	//window->setOccupancy(lenghtObject);
+
+	dataWindow->lastChunkAvailable=objectNumber;
+}
+
 //
 
 static void showWindow(TWindow *window){
@@ -439,21 +580,45 @@ static short getLevelStorageWindow(TWindow *window){
 
 static TOccupancyWindow getOccupancyWindow(TWindow *window){
 
-	//TWindow *window = player->getWindow(player);
+	//TWindow *window = player->getWindowPlayer(player);
 	TDataWindow *data = window->data;
 	return data->occupancy;
 
 }
 
-//
-static float getLastPlaybackedObjWindow(TWindow *window){
+static TBufferWindow getBufferWindow(TWindow *window){
 
-	//TWindow *window = player->getWindow(player);
+	//TWindow *window = player->getWindowPlayer(player);
+	TDataWindow *data = window->data;
+	return data->buffer;
+
+}
+static TOccupBufferWindow getOccupBufferWindow(TWindow *window){
+
+	//TWindow *window = player->getWindowPlayer(player);
+	TDataWindow *data = window->data;
+	return data->occupBuffer;
+
+}
+
+
+
+static long int getLastPlaybackedObjWindow(TWindow *window){
+
+	//TWindow *window = player->getWindowPlayer(player);
 	TDataWindow *data = window->data;
 	return data->lastPlaybackedObj;
 
 }
+//
 
+static long int getLastChunkAvailableWindow(TWindow *window){
+
+	//TWindow *window = player->getWindowPlayer(player);
+	TDataWindow *data = window->data;
+	return data->lastChunkAvailable;
+
+}
 
 //
 static float getPlaybackedTimeWindow(TWindow *window){
@@ -464,7 +629,15 @@ static float getPlaybackedTimeWindow(TWindow *window){
 //
 static float getRemainingPlayingTimeWindow(TWindow *window){
 	TDataWindow *data = window->data;
-	return data->occupancy - data->playbackedTime;
+	float remainingPlayingTime;
+
+	//return data->occupancy - data->playbackedTime;
+	if(data->occupBuffer >= data->size){
+		remainingPlayingTime=data->size;
+	}else{
+		remainingPlayingTime=data->occupBuffer;
+	}
+	return remainingPlayingTime;
 
 }
 
@@ -486,7 +659,7 @@ struct SWMGreedyPolicy{
 	//
 	TSWMReplaceGeneralPolicy Replace; // Object Management Policy Replacement(Greedy/Popularity)
 	TSWMUpdateGeneralPolicy Update; // Object Management Policy Update cache(Greedy/Popularity)
-	TSWMisFitInSwindowGeneralPolicy IsFitInSwindow; // Object Management Policy Eligibility
+	TSWMisFitInSwindowGeneralPolicy FitsInSwindow; // Object Management Policy Eligibility
 
 };
 
@@ -509,7 +682,7 @@ void *createGreedyPolicy(void *entry){
 	// init dynamics
 	policy->SWM->Replace = replaceGreedyPolicy; // Object Management Policy Replacement(Greedy/Popularity)
 	policy->SWM->Update = updateGreedyPolicy; // Object Management Policy Update cache(Greedy/Popularity)
-	//policy->SWM->IsFitInSwindow = isFitInSwindowGreedyPolicy;
+	policy->SWM->FitsInSwindow = fitsInSwindowGreedyPolicy;
 
 	return policy;
 }
@@ -530,7 +703,7 @@ void *replaceGreedyPolicy(TPeer *peer, TObject *video, TArrayDynamic *listPeers,
 
 	//listPeers=listofPeers;
 	int occup,i;
-	short fitsInWindow;
+	short fitsInWindow=0;
 	//unsigned int IDPeer;
 
 	occup=listPeers->getOccupancy(listPeers);
@@ -543,7 +716,7 @@ void *replaceGreedyPolicy(TPeer *peer, TObject *video, TArrayDynamic *listPeers,
 	*picked = candidateServer->hasCachedBiggerVersion(candidateServer,video);
 	player=peer->getPlayer(peer);
 	window=player->getWindow(player);
-	fitsInWindow = policy->SWM->fitsInSwindow = fitsInSwindowGreedyPolicy(player,picked);
+	fitsInWindow = policy->SWM->FitsInSwindow(player,picked);
 	channel = peer->getChannel(peer);
 	downLink = channel->getDownLink(channel);
 	CurrentDownRate = downLink->getCurrentRate(downLink);
@@ -555,24 +728,36 @@ void *replaceGreedyPolicy(TPeer *peer, TObject *video, TArrayDynamic *listPeers,
 
 		serverPeer=candidateServer;
 
+	}else{
+		*picked=NULL;
+		lengthBytes=0;
 	}
+
 	for (i=1;i<occup;i++){
-		candidateServer = listPeers->getElement(listPeers,i);
+		candidateServer = listPeers->getElement(listPeers,i);//lista de pares candidatos zerada
 		*auxPicked=candidateServer->hasCachedBiggerVersion(candidateServer,video);
-		player=peer->getPlayer(peer);
-		window=player->getWindow(player);
-		fitsInWindow = policy->SWM->fitsInSwindow = fitsInSwindowGreedyPolicy(player,auxPicked);
-		channel = peer->getChannel(peer);
-		downLink = channel->getDownLink(channel);
-		CurrentDownRate = downLink->getCurrentRate(downLink);
+		//player=peer->getPlayer(peer);
+		//window=player->getWindowPlayer(player);
+		fitsInWindow = policy->SWM->FitsInSwindow(player,auxPicked);
+		//channel = peer->getChannel(peer);
+		//downLink = channel->getDownLink(channel);
+		//CurrentDownRate = downLink->getCurrentRate(downLink);
 		lengthBytesAux = getLengthBytesObject(*auxPicked);
-		downTime = (lengthBytesAux/1000)/CurrentDownRate;
+		//downTime = (lengthBytesAux/1000)/CurrentDownRate;
+		downTime = player->getDownTime(peer,player,lengthBytesAux);
 		remainingPlayingTime = window->getRemainingPlayingTime(window);
 
 		if((fitsInWindow == 1) && (remainingPlayingTime > downTime) && (lengthBytesAux > lengthBytes)){
 
 			serverPeer=candidateServer;
-			*picked = *auxPicked;
+			*picked = auxPicked;
+			lengthBytes = lengthBytesAux;
+
+		}
+		if((fitsInWindow == 1) && (remainingPlayingTime > downTime) && (lengthBytesAux >= lengthBytes) && candidateServer==peer){
+
+			serverPeer=candidateServer;
+			*picked = auxPicked;
 			lengthBytes = lengthBytesAux;
 
 		}
@@ -604,15 +789,16 @@ short updateGreedyPolicy(void* xSysInfo,void* cache, void* object){
 	return status;
 }
 
-short fitsInSwindowGreedyPolicy(TPlayer *player, TObject **object){
+short fitsInSwindowGreedyPolicy(TPlayer* player, TObject** object){
 	short status = 0;
 	float availabilityWindow;
 	TWindow *window = player->getWindow(player);
 
 	availabilityWindow = window->getAvailability(window);
-
-	if(availabilityWindow >= getLengthObject(*object)){
-		status=1;
+	if(*object!=NULL){
+		if(availabilityWindow >= getLengthObject(*object)){
+			status=1;
+		}
 	}
 
 

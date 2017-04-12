@@ -1041,6 +1041,7 @@ short removeFIFOPolicy(void* vSysInfo, TCache* cache, void* object){
 			head = listObject->getHead(listObject);
 			if(head!=NULL){
 			data->availability += getLengthObject(head);
+
 			// updating list of disposed objects
 			// client could use it and has to clean up it
 			disposed = cloneObject(head);

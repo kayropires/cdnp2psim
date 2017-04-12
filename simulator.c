@@ -273,15 +273,15 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	TObject *video, *cloneVideo,*picked=NULL;
 	TListObject *listEvicted;
-	TPeer *serverPeer;
+	TPeer *serverPeer=NULL;
 	TArrayDynamic *listPeers;
 	TDataSource *dataSource;
 	TItemHashTable *item;
 	unsigned int idServerPeer;
 	TIdObject idVideo;
-	float videoLength;
+	float videoLength,videoLengthBytes;
 	float zero = 0.f;
-	int occup;
+	int occup=0;
 
 
 	TPeer *peer = community->getPeer(community, idPeer);
@@ -304,6 +304,8 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	//serverPeer = community->searching(community,peer,video,idPeer, zero);
 	listPeers = community->searching(community,peer,video,idPeer, zero);
 
+	occup=listPeers->getOccupancy(listPeers);
+
 	//chamada pra função de escalonamento
 	serverPeer = peer->schedulingWindow(peer, video, listPeers,&picked);
 
@@ -315,8 +317,14 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	//chamar o escalonador
 	//Identificar na lista de pares, o serverPeer para fornecer o conteudo requisitado.
-
+	if(picked!=NULL){
 	videoLength = getLengthObject(picked);
+	}else{
+		picked=video;
+		videoLength = getLengthObject(picked);
+
+	}
+	videoLengthBytes=(float)(getLengthBytesObject(picked));
 	//videoLength = getLengthObject(picked);
 
 	// for on-going request, update dispatch requests
@@ -368,7 +376,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	prefetch(peer, idPeer, hashTable, community, systemData);
 
-	return videoLength;
+	return videoLengthBytes;
 }
 
 // Process FINISHED_VIEWING event
@@ -466,7 +474,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 	TPeer *peer;
 	TPlayer *player;
 
-	float videoLength;
+	float videoLengthBytes,downTime;
 	float lengthObj=0;
 	float hitRate=0, missRate=0, byteHitRate, byteMissRate, hitRateCom;
 	unsigned long int totalRequests=0;
@@ -604,8 +612,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 			if (peer->isUp(peer) && (status == STALL_PEER)){
 				//Queuing A Request event
-				timeEvent = clock + peer->getRequestTime(peer);
-				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
+				timeEvent = clock + 2;
+				event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 			}
 
@@ -688,15 +696,31 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		}else if( (typeEvent == REQUEST) && (peer->isUp(peer))){
 
 
+			//se houver tempo habil , request, senao playback, apos playback, request,
 
-			//Processing Request event
-			watchCount++;
-			videoLength = processRequestSimulator(idPeer, hashTable, community, sysInfo);
+			TWindow *window = player->getWindow(player);
 
-			// Queue a FINISHED_VIEWING event after the duration of the video
-			timeEvent = clock + videoLength;
-			event  = createEvent((TTimeEvent) timeEvent, FINISHED_VIEWING, (TOwnerEvent)idPeer);
-			queue->enqueue(queue, timeEvent, event);
+			if (window->getAvailability(window)>=2){
+
+				//Processing Request event
+				watchCount++;
+				videoLengthBytes = processRequestSimulator(idPeer, hashTable, community, sysInfo);//deve retornar o tempo de download
+
+				//insert stall or next request
+				downTime = player->getDownTime(peer,player,videoLengthBytes);
+
+				// Queue a FINISHED_VIEWING event after the duration of the video
+				timeEvent = clock + downTime;
+				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);
+			}
+			/*else{
+				printf("Playback\n");
+				timeEvent = clock + 0;
+				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);
+			}*/
+
 		}else if( (typeEvent == FINISHED_VIEWING) && peer->isUp(peer)){
 			finishCount++;
 			processFinishedViewingSimulator(peer,community);

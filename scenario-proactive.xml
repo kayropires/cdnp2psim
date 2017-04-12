@@ -109,7 +109,7 @@
 					</policy>
 				</cache>
 				<cache>
-					<parameter name="size">20</parameter>
+					<parameter name="size">10</parameter>
 					<policy>
 						<parameter name="dynamic">OMP:FIFO</parameter>
 					</policy>
@@ -123,9 +123,6 @@
 					<parameter name="dynamic">SP:GREEDY</parameter>
 				</policy>
 			</player>
-			
-			
-			
 			
 			<profile>
 				<parameter name="dynamic">PROFILE:JACCARD</parameter>
@@ -164,7 +161,7 @@
 					<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
 					<pick>
 						<parameter name="dynamic">RANDOM:CONSTANT</parameter>
-						<parameter name="value">6125</parameter>
+						<parameter name="value">6133</parameter>
 					</pick>
 				</join>
 				<leave>

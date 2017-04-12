@@ -260,7 +260,7 @@ struct item_neighborhood_search{
 static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, unsigned int clientId, float prefetchFraction){
 	TPeer *peer = vPeer;
 	TDataSearch *data = search->data;
-	TDataNeighborhoodSearch *data_neighborhood = data->data_policy;
+	//TDataNeighborhoodSearch *data_neighborhood = data->data_policy;
 	TArrayDynamic *listPeers = createArrayDynamic(1);
 	THCache *hcache;
 

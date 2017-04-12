@@ -379,23 +379,30 @@ static void updateCacheAsServerPeer(TPeer *serverPeer, void *vObject, void *vSys
 	TDataPeer *data = serverPeer->data;
 	TListObject *listObject;
 	THCache *hcacheServerPeer;
+	TCache *cacheServerPeer;
 
 	hcacheServerPeer = data->hc;
-	int lPrincipal=hcacheServerPeer->getLevelPrincipal(hcacheServerPeer);
+	int level=hcacheServerPeer->getLevelPrincipal(hcacheServerPeer);
+	if (getFoundLevelObject(video)>=0){
+		level=getFoundLevelObject(video);
+
+	}
 
 	// get stored copy
-	listObject = hcacheServerPeer->getObjects(hcacheServerPeer,lPrincipal);
+	listObject = hcacheServerPeer->getObjects(hcacheServerPeer,level);
 	storedVideo = listObject->getObject(listObject, video);
 
+	cacheServerPeer = hcacheServerPeer->getCache(hcacheServerPeer,level);
+
 	//updating peer's stats
-	TStatsCache *statsCacheServer = hcacheServerPeer->getStats(hcacheServerPeer,lPrincipal);
+	TStatsCache *statsCacheServer = cacheServerPeer->getStats(cacheServerPeer);
 	statsCacheServer->addCommunityHit(statsCacheServer, 1);
 	statsCacheServer->addByteCommunityHit( statsCacheServer, getStoredObject(storedVideo) );
 
 	statsCacheServer->addByteMiss(statsCacheServer, getLengthObject(storedVideo) - getStoredObject(storedVideo) );
 
 	// update cache
-	hcacheServerPeer->update(hcacheServerPeer,lPrincipal, video, systemData);
+	cacheServerPeer->update(cacheServerPeer, video, systemData);
 
 }
 

@@ -29,6 +29,7 @@ struct _data_object {
 	unsigned long int lastAccess;
 	float cumulativeValue;
 	float normalizedByteServed;
+	int foundLevel;
 	char upload[26]; // upload data
 
 	//float bitRate;
@@ -73,6 +74,7 @@ TObject* initObject(TIdObject id,int version,int chunkNumber, float length,int l
 	dataObj->accessFrequency = 0;
 	dataObj->cumulativeValue = 0;
 	dataObj->normalizedByteServed = 0;
+	dataObj->foundLevel=0;
 	//dataObj->bitRate = gPopularity; //Overall bit rate |mode: variable
 
 	object->data = dataObj;
@@ -241,6 +243,11 @@ long int getChunkNumber(TObject *object) {
 	return data->chunkNumber;
 }
 
+int getFoundLevelObject(TObject *object) {
+	TDataObject *data = object->data;
+	return data->foundLevel;
+}
+
 float getBitRateObject(TObject *object) {
 	TDataObject *data = object->data;
 	return data->bitRate;
@@ -280,6 +287,11 @@ void setAccessFrequencyObject(TObject *object, float accessFrequency) {
 void setStoredObject(TObject *object, float stored) {
 	TDataObject *data = object->data;
 	data->stored = stored;
+}
+
+void setFoundLevelObject(TObject *object, int level) {
+	TDataObject *data = object->data;
+	data->foundLevel = level;
 }
 
 void setBitRateObject(TObject *object, float bitRate) {
@@ -998,16 +1010,22 @@ static void* getNotLessThanCumulativeValueListObject(TListObject* listObject, vo
 
 static void* getObjectSegmentListObject(TListObject *listObject, void* object) {
 	TElemListObject *walk;
+	//TObject *chunk;
 	short found = 0;
 	TDataListObject *dataListObject = listObject->data;
 
 	walk = dataListObject->head;
+	//chunk = listObject->getHead(listObject);
+
 
 	while (walk != NULL && !found) {
 		if ( isEqualObjectSegment(walk->object, object) )
 			found = 1;
 		else
+
 			walk = walk->next;
+		    //chunk = walk->object;
+			//chunk=listObject->getNext(listObject,NULL);
 	}
 
 	return (found?walk->object:NULL);
@@ -1020,7 +1038,7 @@ static void *getBiggerVersionSegmentListObject(TListObject *listObject, void *ob
 	long int bigger=0;
 	short found = 0;
 	TDataListObject *dataListObject = listObject->data;
-	TDataObject *data;
+	//TDataObject *data;
 
 	walk = dataListObject->head;
 
@@ -1029,11 +1047,11 @@ static void *getBiggerVersionSegmentListObject(TListObject *listObject, void *ob
 
 			if(isBiggerObjectSegment(walk->object, bigger)){
 				picked=walk->object;
-				data=picked->data;
-				bigger = data->lengthBytes;
+				//data=picked->data;
+				bigger = getLengthBytesObject(picked);
 			}
-
 			found = 1;
+
 		}
 		//else{
 			walk = walk->next;

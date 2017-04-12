@@ -334,7 +334,7 @@ static void* getCache(THCache *hc, int levels ){
 }
 //
 static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd){ //@
-	TDataHCache *data = hc->data;
+	//TDataHCache *data = hc->data;
 	TCache *cache;
 	TObject *object = vObject;
 	int i;
@@ -347,11 +347,14 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 		exit (0);
 	}else{
 		while(i<levelEnd && storedObject == NULL){
-			cache=data->hcache[i];
+			//cache=data->hcache[i];
+			cache=hc->getCache(hc,i);
+
 
 			listObject = cache->getObjects(cache);
-			storedObject = listObject->getObjectSegment(listObject, object);//
-
+			if(listObject!=NULL){
+				storedObject = listObject->getObjectSegment(listObject, object);//
+			}
 			i++;
 		}
 	}
@@ -360,22 +363,37 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 //
 
 static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelInit, int levelEnd){ //@
-	TDataHCache *data = hc->data;
+	//TDataHCache *data = hc->data;
 	TCache *cache;
-	int i;
-	TObject *storedObject=NULL;
+	int i,bigger=0;
+	TObject *storedObject=NULL, *auxObject=object;
 	TListObject *listObject;
 
 	i=levelInit;
 	if (levelInit < 0 || levelInit >  levelEnd) {
-		printf("hierarchy.c:searchObjectHCache,Erro: Incorrect search range \n");
+		printf("hierarchy.c:searchObjectHCache,Erro: Incorrect search range, #line 373 \n");
 		exit (0);
 	}else{
-		while(i<levelEnd && storedObject == NULL){
-			cache=data->hcache[i];
+		while(i<levelEnd){
+			//cache=data->hcache[i];
 
+			cache=hc->getCache(hc,i);
 			listObject = cache->getObjects(cache);
-			storedObject = listObject->getBiggerVersion(listObject, object);//
+			if(listObject!=NULL){
+				auxObject = listObject->getBiggerVersion(listObject, auxObject);//
+				if(auxObject!=NULL){
+					if(getLengthBytesObject(auxObject) > bigger){
+						bigger=getLengthBytesObject(auxObject);
+						storedObject=auxObject;
+						setFoundLevelObject(storedObject,i);
+					}
+
+				}else{
+					if(storedObject!=NULL){
+					auxObject=storedObject;
+					}
+				}
+			}
 
 			i++;
 		}
