@@ -277,20 +277,27 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	TArrayDynamic *listPeers;
 	TDataSource *dataSource;
 	TItemHashTable *item;
+	TPlayer *player;
+	TWindow *window;
 	unsigned int idServerPeer;
 	TIdObject idVideo;
 	float videoLength,videoLengthBytes;
 	float zero = 0.f;
 	int occup=0;
+	long int lastPlayedObject;
 
 
 	TPeer *peer = community->getPeer(community, idPeer);
+	player = peer->getPlayer(peer);
+	window = player->getWindow(player);
+	lastPlayedObject = window->getLastPlaybackedObj(window);
 
 	THCache *hc=peer->getHCache(peer); //@
 	int lPrincipal=hc->getLevelPrincipal(hc); //@
 
 	dataSource = peer->getDataSource(peer);
-	video = dataSource->pick(dataSource); // Retornando sequencialmente o padrão de acesso !
+	//video = dataSource->pick(dataSource); // Retornando sequencialmente o padrão de acesso !
+	video = dataSource->pickFromAdaptive(dataSource,0,lastPlayedObject+1); // Retornando sequencialmente o padrão de acesso !
 	picked = video;
 
 	//Aqui entra escalonador
@@ -699,7 +706,9 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			//se houver tempo habil , request, senao playback, apos playback, request,
 
 			TWindow *window = player->getWindow(player);
+			long int lastPlayedObject = window->getLastPlaybackedObj(window);
 
+			if(lastPlayedObject >= 6133 ){
 			if (window->getAvailability(window)>=2){
 
 				//Processing Request event
@@ -713,9 +722,27 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				timeEvent = clock + downTime;
 				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
+			}else{
+
+				printf("Janela Cheia, postergando requisicao !\n");
 			}
+			}else{
+
+				printf("Visualização do vídeo finalizada no par :%ld !\n",idPeer);
+			}
+
 			/*else{
-				printf("Playback\n");
+				timeEvent = clock + 2;
+				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);
+
+			}*/
+
+
+
+
+			/*else{
+				printf("stallRequest\n");
 				timeEvent = clock + 0;
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);

@@ -43,6 +43,7 @@ static int getLevelPrincipalHCache(THCache* hc);
 static int getLevelReplicateHCache(THCache* hc);
 static int getLevelStorageHCache(THCache* hc);
 static void* getCache(THCache *hc, int levels );
+static void* getStatsHCache(THCache *hc, int levels );
 static TOccupancyHCache getOccupancyHCache(THCache *hc, int levels);
 static void addAvailabilityHCache(THCache* hc, int levels, TAvailabilityHCache amount);
 static unsigned int getNumberOfStoredObjectHCache(THCache* hc, int levels);
@@ -126,6 +127,7 @@ THCache *createHCache(int levels){
 	hc->getLevelReplicate=getLevelReplicateHCache;
 	hc->getLevelStorage=getLevelStorageHCache;
 	hc->getCache=getCache;
+	hc->getStats = getStatsHCache;
 	hc->addAvailability=addAvailabilityHCache;
 	hc->getOccupancy = getOccupancyHCache;
 	hc->showStats = showStatsHCache;
@@ -332,7 +334,18 @@ static void* getCache(THCache *hc, int levels ){
 
 	return cache;
 }
+
 //
+static void* getStatsHCache(THCache *hc, int levels ){
+	TDataHCache *data = hc->data;
+	TCache *cache=data->hcache[levels];
+
+	return cache->getStats(cache);
+}
+
+//
+
+
 static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd){ //@
 	//TDataHCache *data = hc->data;
 	TCache *cache;
