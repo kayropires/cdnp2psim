@@ -284,20 +284,21 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	float videoLength,videoLengthBytes;
 	float zero = 0.f;
 	int occup=0;
-	long int lastPlayedObject;
+	long int lastAvailableChunk;
 
 
 	TPeer *peer = community->getPeer(community, idPeer);
 	player = peer->getPlayer(peer);
 	window = player->getWindow(player);
-	lastPlayedObject = window->getLastPlaybackedObj(window);
+	//lastPlayedObject = window->getLastPlaybackedObj(window);
+	lastAvailableChunk = window->getLastChunkAvailable(window);
 
 	THCache *hc=peer->getHCache(peer); //@
 	int lPrincipal=hc->getLevelPrincipal(hc); //@
 
 	dataSource = peer->getDataSource(peer);
 	//video = dataSource->pick(dataSource); // Retornando sequencialmente o padrão de acesso !
-	video = dataSource->pickFromAdaptive(dataSource,0,lastPlayedObject+1); // Retornando sequencialmente o padrão de acesso !
+	video = dataSource->pickFromAdaptive(dataSource,0,lastAvailableChunk+1); // Retornando sequencialmente o padrão de acesso !
 	picked = video;
 
 	//Aqui entra escalonador
@@ -313,19 +314,21 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	occup=listPeers->getOccupancy(listPeers);
 
+	if(occup!=0){
+		serverPeer = peer->schedulingWindow(peer, video, listPeers,&picked);
+
+	}
+
 	//chamada pra função de escalonamento
-	serverPeer = peer->schedulingWindow(peer, video, listPeers,&picked);
 
-	occup=listPeers->getOccupancy(listPeers);
-	/*if(occup==0){
 
-		serverPeer=NULL;
-	}*/
+	//occup=listPeers->getOccupancy(listPeers);
+
 
 	//chamar o escalonador
 	//Identificar na lista de pares, o serverPeer para fornecer o conteudo requisitado.
 	if(picked!=NULL){
-	videoLength = getLengthObject(picked);
+		videoLength = getLengthObject(picked);
 	}else{
 		picked=video;
 		videoLength = getLengthObject(picked);
@@ -376,6 +379,8 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 				// updating hash table due to evicting that made room for the cached video
 				listEvicted = peer->getEvictedCache(peer);
 				hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
+				window->setLastChunkAvailable(window,lastAvailableChunk+1);
+				window->setOccupancy(window,getLengthObject(picked));
 
 			}
 		}
@@ -589,9 +594,19 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			//@ Set time Join Peer
 			peer->setStartSession(peer, clock);
 
-			timeEvent = clock + 10;
+
+			//short status = peer->getStatus(peer);
+			//if (peer->isUp(peer) && (status == STALL_PEER)){
+				//Queuing A Buffering event
+				timeEvent = clock + 10;
+				event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);
+			//}
+
+
+			/*timeEvent = clock + 10;
 			event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
-			queue->enqueue(queue, timeEvent, event);
+			queue->enqueue(queue, timeEvent, event);*/
 
 			//Queuing a LEAVE event
 			timeEvent = clock + peer->getUpSessionDuration(peer);
@@ -617,12 +632,12 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			short status = peer->getStatus(peer);
 			processTopologySimulator(idPeer, hashTable, community, sysInfo);
 
-			if (peer->isUp(peer) && (status == STALL_PEER)){
-				//Queuing A Request event
-				timeEvent = clock + 2;
-				event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
-				queue->enqueue(queue, timeEvent, event);
-			}
+//			if (peer->isUp(peer) && (status == STALL_PEER)){
+//				//Queuing A Request event
+//				timeEvent = clock + 2;
+//				event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
+//				queue->enqueue(queue, timeEvent, event);
+//			}
 
 			//Queuing A Topology manager event
 			timeEvent = clock + (status==STALL_PEER?10:130);
@@ -676,7 +691,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			timeEvent = clock + SimTime*0.05;
 			event  = createEvent((TTimeEvent) timeEvent, SHOW_CHANNELS, (TOwnerEvent)idPeer);
 			queue->enqueue(queue, timeEvent, event);
-		}else if (typeEvent == LEAVE){ // change it with U need a model without churn
+		}else if ((typeEvent == LEAVE) && (peer->isUp(peer))){ // change it with U need a model without churn
 			// change the peer status to DOWN
 			leaveCount++;
 			peer->setStatus(peer, DOWN_PEER);
@@ -706,9 +721,10 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			//se houver tempo habil , request, senao playback, apos playback, request,
 
 			TWindow *window = player->getWindow(player);
-			long int lastPlayedObject = window->getLastPlaybackedObj(window);
+			//long int lastPlayedObject = window->getLastPlaybackedObj(window);
+			long int lastAvailableChunk = window->getLastChunkAvailable(window);
 
-			if(lastPlayedObject >= 6133 ){
+			if(lastAvailableChunk <= 6133 ){
 			if (window->getAvailability(window)>=2){
 
 				//Processing Request event
@@ -719,13 +735,22 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				downTime = player->getDownTime(peer,player,videoLengthBytes);
 
 				// Queue a FINISHED_VIEWING event after the duration of the video
-				timeEvent = clock + downTime;
+				timeEvent = clock+downTime;
 				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
+
+				/*timeEvent = clock;
+				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);*/
 			}else{
+
+				timeEvent = clock + 2;
+				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);
 
 				printf("Janela Cheia, postergando requisicao !\n");
 			}
+
 			}else{
 
 				printf("Visualização do vídeo finalizada no par :%ld !\n",idPeer);
@@ -751,6 +776,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		}else if( (typeEvent == FINISHED_VIEWING) && peer->isUp(peer)){
 			finishCount++;
 			processFinishedViewingSimulator(peer,community);
+
+			//É Necessario ?
 			//Queuing A Request event based on the user thinking time
 			timeEvent = clock + peer->getRequestTime(peer);
 			event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
@@ -776,6 +803,10 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 			queue->enqueue(queue, timeEvent, event);
 
+			timeEvent = clock + 2;
+			event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
+			queue->enqueue(queue, timeEvent, event);
+
 
 		//}else if ((typeEvent == REPLICATE) && (peer->isUp(peer)) ){
 		}else if ( (typeEvent == PLAYBACK) ){
@@ -787,6 +818,13 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			timeEvent = clock + lengthObj;//@ ajustar o tempo de reproducao
 			event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 			queue->enqueue(queue, timeEvent, event);
+			}else{
+
+				timeEvent = clock + 2;//@ ajustar o tempo de reproducao
+				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
+				queue->enqueue(queue, timeEvent, event);
+
+
 			}
 
 			// chamada pro escalonamento.

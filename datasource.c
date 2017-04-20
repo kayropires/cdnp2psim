@@ -157,6 +157,7 @@ struct _data_FromCollection {
 	void **objects;
 	//unsigned int size;
 	long int size;
+	int versionsLength;
 };
 
 struct _data_FromPlayList {
@@ -614,8 +615,9 @@ void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int 
 
 
 	void **objects = data->objects;
+	long int collectionLength = data->size/7;
 
-	i = (version*6133)+segment;
+	i = (version*collectionLength)+segment;
 
 	if ((i < 0) || (i >= data->size)) {
 		printf("PANIC: Error on pick UP procedure %u\n", i);
@@ -886,7 +888,7 @@ void *createPrefetchNextFromPlaylist(char *pars) {
 //Datacatalog Adaptive
 //data source init
 static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *filename,
-		long int size) {
+		long int size, long int versionsLength) {
 	TFromCollectionDataCatalog *data;
 	void **objects;
 	FILE* fp;
@@ -956,6 +958,7 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 
 	data->objects = objects;
 	data->size = size;
+	data->versionsLength = versionsLength;
 
 	fclose(fp);
 
@@ -999,7 +1002,7 @@ TDataCatalog *createFromCollectionSingletonAdaptiveDataCatalog(TParsDataCatalog 
 
 TDataCatalog *createFromCollectionAdaptiveDataCatalog(TParsDataCatalog *pars) {
 	char *filename;
-	long int size;
+	long int size,versionsLength;
 	char *entry = pars->entry;
 	void *randomic = pars->randomic;
 	TDataCatalog *ds;
@@ -1011,9 +1014,11 @@ TDataCatalog *createFromCollectionAdaptiveDataCatalog(TParsDataCatalog *pars) {
 	// walk through the parameters as setting up
 	filename = lp->next(lp);
 	size = atol(lp->next(lp));
+	versionsLength = atol(lp->next(lp));
+
 
 	ds = malloc(sizeof(TDataCatalog));
-	ds->data = initFromCollectionAdaptiveDataCatalog(filename, size);
+	ds->data = initFromCollectionAdaptiveDataCatalog(filename, size, versionsLength);
 	ds->dynamic = randomic;
 	ds->dispose = disposeFromCollectionAdaptiveDataCatalog;
 
