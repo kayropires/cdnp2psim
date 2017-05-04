@@ -423,9 +423,10 @@ static void updateCachePeer(TPeer *peer, void *vObject, void *vSystemData){
 
 	// get stored copy
 	TListObject *listObject = hc->getObjects(hc,lPrincipal);
-	storedVideo = listObject->getObject(listObject, video);
+	//storedVideo = listObject->getObject(listObject, video);
+	storedVideo = listObject->getObjectSegment(listObject,video);
 	if (storedVideo == NULL)
-		printf("Nào achou o video\n");
+		printf("Nao achou o video\n");
 
 	statsCache->addByteHit( statsCache, getStoredObject(storedVideo) );
 	statsCache->addByteMiss( statsCache, getLengthObject(storedVideo) - getStoredObject(storedVideo) );

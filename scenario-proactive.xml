@@ -161,7 +161,7 @@
 					<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
 					<pick>
 						<parameter name="dynamic">RANDOM:CONSTANT</parameter>
-						<parameter name="value">20000</parameter>
+						<parameter name="value">50000</parameter>
 					</pick>
 				</join>
 				<leave>
@@ -196,6 +196,7 @@
 						<parameter name="collection">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/ColecaoYoutube_Entretenimento.txt</parameter>
 						<parameter name="length">42931</parameter>
 						<parameter name="versionsLength">7</parameter>
+						
 					</catalog>
 				</datasource>
 			</content>

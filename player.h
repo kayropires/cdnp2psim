@@ -37,6 +37,9 @@ typedef void (* TSetPlaybackedTime)(TWindow *window, float lenghtObject);
 typedef void (* TSetLastPlaybackedObj)(TWindow *window, long int numberObject);
 typedef void (* TSetLastChunkAvailable)(TWindow *window, long int numberObject);
 
+typedef void (* TResetWindow)(TWindow *window);
+
+
 
 
 
@@ -61,6 +64,8 @@ typedef TAvailabilityWindow (* TGetAvailabilityWindow)(TWindow* window);
 typedef TSizeWindow (* TGetSizeWindow)(TWindow* window);
 typedef TWindow *(* TGetWindow)(TPlayer* player);
 typedef float (* TGetDownTimeChunk)(void *peer, TPlayer *player, float lenghtObject);
+
+typedef long int (* TGetCollectionLength)(void *datasource);
 
 typedef TOccupancyWindow(* TGetOccupancyWindow)(TWindow *window);
 typedef TBufferWindow(* TGetBufferWindow)(TWindow *window);
@@ -93,6 +98,7 @@ struct player{
 	TSwapStoragePlayer swapStorage;
 	TGetWindow getWindow;
 	TGetDownTimeChunk	getDownTime;
+	TGetCollectionLength getCollectionLength;
 
 
 
@@ -143,6 +149,8 @@ struct window{
 	TSetPlaybackedTime setPlaybackedTime;
 	TSetLastPlaybackedObj setLastPlaybackedObj;
 	TSetLastChunkAvailable setLastChunkAvailable;
+
+	TResetWindow resetWindow;
 };
 
 

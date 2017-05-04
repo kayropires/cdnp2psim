@@ -63,6 +63,7 @@ typedef void (* TResetDataSource)(TDataSource *);
 typedef int (* TSizeDataSource)(TDataSource *);
 typedef int (* TDurationDataSource)(TDataSource *);
 typedef int (* TFirstkDurationDataSource)(TDataSource *, int k);
+typedef long int (* TGetCollectionLengthDataSource)(TDataSource* );
 
 struct prefetch{
 	TPickForPrefetchDataSource dynamic;
@@ -80,6 +81,7 @@ struct datasource{
 
 	// public methos
 	TGetPrefetchRateDataSource getPrefetchRate;
+	TGetCollectionLengthDataSource getCollectionLength;
 	TPickDataSource pick;
 	TPickFromAdaptiveDataSource pickFromAdaptive;
 	TPickForPrefetchDataSource pickForPrefetch;
@@ -93,6 +95,8 @@ struct datasource{
 void *createFromCollectionDataSource(TDataCatalog *dataCatalog);
 void *pickFromCollectionDataSource(TDataSource *dataSource);
 void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int segment);
+
+
 //void *pickFromAdaptiveDatasource(TDataSource *dataSource);
 void resetFromCollectionDataSource(TDataSource *dataSource);
 int sizeFromCollectionDataSource(TDataSource *dataSource);

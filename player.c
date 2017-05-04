@@ -46,6 +46,7 @@ static short swapStorageSwindow(TPlayer *player);
 static short getLevelStorageWindow(TWindow *window);
 //static TSizeWindow getSizeWindow(TPlayer *player);
 static float getDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes);
+static long int getCollectionLength(TDataSource *dataSource);
 
 
 ////prototipos de funcoes Window
@@ -69,12 +70,13 @@ static TWindow *getWindowPlayer(TPlayer *player);
 static TOccupancyWindow getOccupancyWindow(TWindow *window);
 static TBufferWindow getBufferWindow(TWindow *window);
 static TOccupBufferWindow getOccupBufferWindow(TWindow *window);
-
-
 static unsigned int getNumberOfStoredObjectWindow(TWindow *window);
 static void showWindow(TWindow *window);
 static short hasWindow(TWindow *window, void *object);
 static TAvailabilityWindow getAvailabilityWindow(TWindow *window);
+static void resetWindow(TWindow *window );
+
+
 //static void buffering(unsigned int idPeer, void* hashTable, void* community, void* systemData);
 //static TPlayback *createPlayback(TSizeWindow size);
 
@@ -134,6 +136,23 @@ static TDataWindow *initDataWindow(TSizeWindow size, void *policy ){
 	data->policy = policy;
 	return data;
 }
+
+static void resetWindow(TWindow *window ){
+	TDataWindow *data = window->data;
+
+	//data->size = size;
+	data->occupancy = 0;
+	data->playbackedTime=0;
+	data->lastPlaybackedObj=-1;
+	data->lastChunkAvailable=-1;
+	//data->lStorage = 2;
+	//data->buffer = size;
+	data->occupBuffer = 0;
+	//data->policy = policy;
+	//return data;
+}
+
+
 TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 	TWindow *window = (TWindow *)malloc(sizeof(TWindow));
 
@@ -167,6 +186,8 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 	window->setLastPlaybackedObj = setLastPlaybackedObjWindow;
 	window->setLastChunkAvailable = setLastChunkAvailableWindow;
 
+	window->resetWindow = resetWindow;
+
 	return window;
 }
 
@@ -184,6 +205,8 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 	player->swapStorage = swapStorageSwindow; 		//troca os objetos de nivel de cache apos reproducao
 	player->getWindow = getWindowPlayer;
 	player->getDownTime = getDownTimeChunk;
+	player->getCollectionLength = getCollectionLength;
+
 	//player->show = showWindow;
 	//player->has = hasWindow;
 	//gets
@@ -282,67 +305,7 @@ static void *schedulingWindow(TPeer *peer, void *video, void *listPeer,void **pi
 	return ServerPeer;
 }
 
-/*static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData){
-	//TDataPlayer *data = player->data;
-	short status=0;
-	float playbackTime,stallTime,spentTime,lengthCurrentObject=0, lengthLastObj=0;
-	TWindow *window=player->getWindow(player);
-	//TDataWindow *dataWindow=window->data;
-	THCache *hc=peer->getHCache(peer);
-	TCache *storage;
 
-	int levelStorage=hc->getLevelStorage(hc);
-	int levelPrincipal=hc->getLevelPrincipal(hc);
-
-	storage = hc->getCache(hc,levelStorage);
-	TListObject *listObjects=storage->getObjects(storage);
-	TListObject *listEvicted;
-	TObject *head;
-	TIdObject idVideo;
-	unsigned int idPeer;
-
-	TItemHashTable *item;
-	head = listObjects->getHead(listObjects);
-	idPeer = peer->getId(peer);
-
-	if(head!=NULL){
-
-		lengthCurrentObject=getLengthObject(head);
-
-		hc->insert(hc,levelPrincipal,cloneObject(head),systemData);//swap obj for principal level
-
-		getIdObject(head, idVideo);
-
-		item = createItemHashTable();
-		item->set(item, idPeer, peer, idVideo, head);
-		hashTable->insert(hashTable, item);
-		item->dispose(item);
-
-		listEvicted = peer->getEvictedCache(peer);
-
-		hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
-
-		status = storage->remove(storage,head,systemData);
-		//window->setOccupancy(window,-lengthCurrentObject);
-		window->setOccupBuffer(window,-lengthCurrentObject);
-		//dataWindow->occupancy-=lengthCurrentObject;
-
-
-	}else{
-
-		//Stall
-		//lengthCurrentObject=0;
-	}
-	lengthLastObj=window->getLastPlaybackedObj(window);
-
-	window->setPlaybackedTime(window,lengthLastObj);
-
-	window->setLastPlaybackedObj(window,lengthCurrentObject);
-
-	return lengthCurrentObject;
-
-
-}*/
 
 static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData){
 
@@ -367,8 +330,9 @@ static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,T
 
 	i=levelInit;
 
-	if(lastPlaybackedObject<6133){
-		auxObject = dataSource->pickFromAdaptive(dataSource,0,lastPlaybackedObject+=1);
+
+	if(lastPlaybackedObject <= (dataSource->getCollectionLength(dataSource)-1)){
+		auxObject = dataSource->pickFromAdaptive(dataSource,0,lastPlaybackedObject+1);
 		aux2 = auxObject;
 
 		while(i<levelEnd){
@@ -403,9 +367,9 @@ static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,T
 	if(storedObject!=NULL){
 		lengthObject = getLengthObject(storedObject);
 		window->setPlaybackedTime(window,lengthObject);
-		if(window->getOccupancy(window)>0)
+		if(window->getPlaybackedTime(window) > window->getSize(window))
 		window->setOccupancy(window,-lengthObject);
-		window->setLastPlaybackedObj(window,lastPlaybackedObject);
+		window->setLastPlaybackedObj(window,lastPlaybackedObject+1);
 
 	}
 
@@ -448,6 +412,12 @@ static float getDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes){
 		downTime = (lengthBytes/1000)/CurrentDownRate;
 
 		return downTime;
+}
+
+static long int getCollectionLength(TDataSource *dataSource){
+	//getCollectionLengthDataSource(dataSource);
+
+		return getCollectionLengthDataSource(dataSource);
 }
 
 
@@ -498,8 +468,13 @@ static void setOccupancyWindow(TWindow *window, float lenghtObject){
 	TWindow *window = data->window;*/
 	TDataWindow *dataWindow=window->data;
 	//window->setOccupancy(lenghtObject);
+	float occupWindow = dataWindow->occupancy;
+	if ((occupWindow +lenghtObject) < 0){
+		dataWindow->occupancy = 0;
+	}else{
+		dataWindow->occupancy+=lenghtObject;
+	}
 
-	dataWindow->occupancy+=lenghtObject;
 }
 
 //
@@ -629,15 +604,15 @@ static float getPlaybackedTimeWindow(TWindow *window){
 //
 static float getRemainingPlayingTimeWindow(TWindow *window){
 	TDataWindow *data = window->data;
-	float remainingPlayingTime;
+/*	float remainingPlayingTime;
 
 	//return data->occupancy - data->playbackedTime;
-	if(data->occupBuffer >= data->size){
+	if(data->occupancy <= data->size){
 		remainingPlayingTime=data->size;
 	}else{
 		remainingPlayingTime=data->occupBuffer;
-	}
-	return remainingPlayingTime;
+	}*/
+	return data->size-data->occupancy;
 
 }
 
