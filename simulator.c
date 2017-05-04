@@ -343,6 +343,11 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	if (serverPeer == peer ){
 
+		long int number = getChunkNumber(video);
+		long int number2 = getChunkNumber(picked);
+		long int number3 = getChunkNumber(&picked);
+
+
 		peer->updateCache(peer, picked, systemData);
 		listEvicted = peer->getEvictedCache(peer);
 		hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
@@ -848,7 +853,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 				printf("Par: %u \n",peer->getId(peer));
 				printf(" Segmento: %ld \n",window->getLastPlaybackedObj(window));
-				if (window->getLastPlaybackedObj(window) >8 && window->getLastPlaybackedObj(window)< 12){
+				/*if (window->getLastPlaybackedObj(window) >8 && window->getLastPlaybackedObj(window)< 12){
 
 					sleep(1);		            // chamada pro escalonamento.
 				}
@@ -856,7 +861,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				if (window->getLastPlaybackedObj(window) >6128 && window->getLastPlaybackedObj(window)< 6133){
 
 									sleep(1);
-				}
+				}*/
 
 
 			}else{

@@ -381,16 +381,25 @@ static void updateCacheAsServerPeer(TPeer *serverPeer, void *vObject, void *vSys
 	THCache *hcacheServerPeer;
 	TCache *cacheServerPeer;
 
+	int level;
+
+	long int number = getChunkNumber(vObject);
+	long int number2 = getChunkNumber(video);
+
 	hcacheServerPeer = data->hc;
-	int level=hcacheServerPeer->getLevelPrincipal(hcacheServerPeer);
-	if (getFoundLevelObject(video)>=0){
-		level=getFoundLevelObject(video);
+	//int level=hcacheServerPeer->getLevelPrincipal(hcacheServerPeer);
+
+
+	// get stored copy
+	//listObject = hcacheServerPeer->getObjects(hcacheServerPeer,level);
+	//storedVideo = listObject->getObject(listObject, video);
+	storedVideo = hcacheServerPeer->searchBiggerVersion(hcacheServerPeer, video, 0,3);
+	if (getFoundLevelObject(storedVideo)>=0){
+			level=getFoundLevelObject(storedVideo);
 
 	}
 
-	// get stored copy
-	listObject = hcacheServerPeer->getObjects(hcacheServerPeer,level);
-	storedVideo = listObject->getObject(listObject, video);
+	if(storedVideo!=NULL){
 
 	cacheServerPeer = hcacheServerPeer->getCache(hcacheServerPeer,level);
 
@@ -402,20 +411,25 @@ static void updateCacheAsServerPeer(TPeer *serverPeer, void *vObject, void *vSys
 	statsCacheServer->addByteMiss(statsCacheServer, getLengthObject(storedVideo) - getStoredObject(storedVideo) );
 
 	// update cache
-	cacheServerPeer->update(cacheServerPeer, video, systemData);
+	cacheServerPeer->update(cacheServerPeer, storedVideo, systemData);
+	}
+	setFoundLevelObject(storedVideo,-1);
 
 }
 
 static void updateCachePeer(TPeer *peer, void *vObject, void *vSystemData){
-	TObject *storedVideo, *video = vObject;
+	TObject *storedVideo, *video;
 	TSystemInfo *systemData = vSystemData;
 	TDataPeer *data = peer->data;
-
+	video = vObject;
 	// update cache
 	THCache *hc = data->hc;
 	int lPrincipal=hc->getLevelPrincipal(hc);
 
-	hc->update(hc,lPrincipal, video, systemData);
+	long int number = getChunkNumber(vObject);
+	long int number2 = getChunkNumber(video);
+
+	hc->update(hc,lPrincipal, vObject, systemData);
 
 	// record a hit
 	TStatsCache *statsCache = hc->getStats(hc,lPrincipal);
@@ -424,7 +438,7 @@ static void updateCachePeer(TPeer *peer, void *vObject, void *vSystemData){
 	// get stored copy
 	TListObject *listObject = hc->getObjects(hc,lPrincipal);
 	//storedVideo = listObject->getObject(listObject, video);
-	storedVideo = listObject->getObjectSegment(listObject,video);
+	storedVideo = listObject->getObjectSegment(listObject,vObject);
 	if (storedVideo == NULL)
 		printf("Nao achou o video\n");
 
@@ -793,7 +807,7 @@ static short hasCachedPeer(TPeer* peer, void *object){
 }
 
 //
-static void *hasCachedBiggerVersionPeer(TPeer *peer, TObject *object, void *picked){
+static void *hasCachedBiggerVersionPeer(TPeer *peer, TObject *object){
 	TDataPeer *data = peer->data;
 	THCache *hc = data->hc;
 	int levelInit=0, levelEnd=hc->getLevels(hc);

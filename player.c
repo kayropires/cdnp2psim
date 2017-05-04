@@ -725,17 +725,24 @@ void *replaceGreedyPolicy(TPeer *peer, TObject *video, TArrayDynamic *listPeers,
 		if((fitsInWindow == 1) && (remainingPlayingTime > downTime) && (lengthBytesAux > lengthBytes)){
 
 			serverPeer=candidateServer;
+
+			float lengthBytes3 = getLengthBytesObject(*picked);
+			float lengthBytes4 = getLengthBytesObject(*auxPicked);
+
 			*picked = auxPicked;
 			lengthBytes = lengthBytesAux;
 
+			 lengthBytes3 = getLengthBytesObject(*auxPicked);
+			 lengthBytes4 = getLengthBytesObject(*auxPicked);
+
 		}
-		if((fitsInWindow == 1) && (remainingPlayingTime > downTime) && (lengthBytesAux >= lengthBytes) && candidateServer==peer){
+		/*if((fitsInWindow == 1) && (remainingPlayingTime > downTime) && (lengthBytesAux >= lengthBytes) && candidateServer==peer){
 
 			serverPeer=candidateServer;
 			*picked = auxPicked;
 			lengthBytes = lengthBytesAux;
 
-		}
+		}*/
 
 		//status = policy->SWM->hasChannel = isFitInSwindowGreedyPolicy(peer,candidate, *picked);
 

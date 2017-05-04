@@ -1008,7 +1008,7 @@ static void* getNotLessThanCumulativeValueListObject(TListObject* listObject, vo
 }
 //
 
-static void* getObjectSegmentListObject(TListObject *listObject, void* object) {
+static void* getObjectSegmentListObject(TListObject *listObject, TObject* object) {
 	TElemListObject *walk;
 	//TObject *chunk;
 	short found = 0;
@@ -1044,6 +1044,8 @@ static void *getBiggerVersionSegmentListObject(TListObject *listObject, void *ob
 
 	while (walk != NULL) {
 		if ( isEqualObjectSegment(walk->object, object) ){
+			/*if(getLengthBytesObject(walk->object) >=bigger)
+			picked=walk->object;*/
 
 			if(isBiggerObjectSegment(walk->object, bigger)){
 				picked=walk->object;
