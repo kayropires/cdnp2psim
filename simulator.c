@@ -21,6 +21,7 @@
 #include "player.h"
 
 
+
 //#define LENGTH_VIDEO_CATALOG 413524
 #define LENGTH_VIDEO_CATALOG 6134
 
@@ -33,28 +34,6 @@
 #define WEEKS_TO_SECONDS	7*DAYS_TO_SECONDS
 #define YEARS_TO_SECONDS	365*DAYS_TO_SECONDS
 
-//
-
-
-//
-/*typedef struct _tier TTier;
-struct _tier{
-	int size;
-	int startIn;
-	TSearch *searching;
-};
-typedef struct _tiers TTiers;
-struct _tiers{
-	int numberOf;
-	TTier* tier;
-};
-struct _data_community{
-	TPeer** peers; //TPeer
-	TArrayDynamic *alive;
-	unsigned int *alivePeers;
-	int size;
-	TTiers *tiers;
-};*/
 
 //extreme replication control policy
 //
@@ -154,14 +133,6 @@ void initSimulator(int simTime, TCommunity** pCommunity, TPriorityQueue** pQueue
 		queue->enqueue(queue, eventTime, event);
 	}
 
-//	event = createEvent( 1, SHOW_TOPOLOGY, 0);
-//	queue->enqueue(queue, event->getTime(event), event);
-
-//	event = createEvent( 1, SHOW_MAPQUERY, 0);
-//	queue->enqueue(queue, event->getTime(event), event);
-
-//	event = createEvent( 1, SHOW_CHANNELS, 0);
-//	queue->enqueue(queue, event->getTime(event), event);
 	eventTime += 7*24*60*60;
 	event  = createEvent((TTimeEvent) eventTime, REPLICATE, 0);
 	queue->enqueue(queue, eventTime, event);
@@ -248,7 +219,7 @@ void prefetch(TPeer* peer, unsigned int idPeer, THashTable* hashTable, TCommunit
 	serverPeer = community->searching(community,peer,video,idPeer, prefetchRate);
 
 	if ( serverPeer != NULL && serverPeer != peer ){
-			getIdObject(video, idVideo);
+		getIdObject(video, idVideo);
 		idServerPeer = serverPeer->getId(serverPeer);
 		//printf("Comecar prefetch de %s: %d <- %d\n", idVideo, idPeer, idServerPeer);
 		serverPeer->openULVideoChannel(serverPeer, idPeer, video, prefetchRate);
@@ -291,21 +262,12 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	player = peer->getPlayer(peer);
 	window = player->getWindow(player);
 	lastAvailableChunk = window->getLastChunkAvailable(window);
-
 	THCache *hc=peer->getHCache(peer); //@
 	int lPrincipal=hc->getLevelPrincipal(hc); //@
-
 	dataSource = peer->getDataSource(peer);
-	//video = dataSource->pick(dataSource); // Retornando sequencialmente o padrão de acesso !
+
 	video = dataSource->pickFromAdaptive(dataSource,0,lastAvailableChunk+1); // Retornando sequencialmente o padrão de acesso !
-	//picked = video;
 
-	//Aqui entra escalonador
-	//Perguntar do player do par, qual o proximo segmento.
-
-
-	//set video that the peer is currently viewing
-	//peer->setCurrentlyViewing(peer, video);
 
 	//Retornar lista de pares candidatos, verificar disponibilidade do objeto e capacidade do par em servir-lo.
 	//serverPeer = community->searching(community,peer,video,idPeer, zero);
@@ -318,25 +280,17 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	}
 
-	//chamada pra função de escalonamento
 
-
-	//occup=listPeers->getOccupancy(listPeers);
-
-
-	//chamar o escalonador
-	//Identificar na lista de pares, o serverPeer para fornecer o conteudo requisitado.
 	if(picked!=NULL){
-	//videoLength = getLengthObject(picked);
- 	videoLengthBytes = (float)(getLengthBytesObject(picked));
+
+		videoLengthBytes = (float)(getLengthBytesObject(picked));
 	}else{
 		picked=video;
-		 videoLengthBytes = (float)(getLengthBytesObject(picked));
-		//videoLength = getLengthObject(picked);
+		videoLengthBytes = (float)(getLengthBytesObject(picked));
+
 
 	}
-	//videoLengthBytes=(float)(getLengthBytesObject(picked));
-	//videoLength = getLengthObject(picked);
+
 
 	// for on-going request, update dispatch requests
 	addRequestStatsPeer( peer->getOnStats(peer), 1);
@@ -352,9 +306,9 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 		listEvicted = peer->getEvictedCache(peer);
 		hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 		getIdObject(picked, idVideo);
- 		videoLengthBytes = 0;
- 		window->setOccupancy(window,getLengthObject(picked));
- 		window->setLastChunkAvailable(window,lastAvailableChunk+1);
+		videoLengthBytes = 0;
+		window->setOccupancy(window,getLengthObject(picked));
+		window->setLastChunkAvailable(window,lastAvailableChunk+1);
 		//printf("Comecar a assistir da cache: %d %s\n", idPeer, idVideo);
 
 		//Looking UP peers into keepers
@@ -375,18 +329,18 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 			cloneVideo=cloneObject(picked);
 			if ( peer->insertCache( peer, cloneVideo , systemData, lPrincipal ) ){
-							getIdObject(picked, idVideo);
+				getIdObject(picked, idVideo);
 
-							item = createItemHashTable();
-							item->set(item, idPeer, peer, idVideo, picked);
-							hashTable->insert(hashTable, item);
-							item->dispose(item);
+				item = createItemHashTable();
+				item->set(item, idPeer, peer, idVideo, picked);
+				hashTable->insert(hashTable, item);
+				item->dispose(item);
 
-							// updating hash table due to evicting that made room for the cached video
-							listEvicted = peer->getEvictedCache(peer);
-							hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
-							window->setOccupancy(window,getLengthObject(picked));
-				            window->setLastChunkAvailable(window,lastAvailableChunk+1);
+				// updating hash table due to evicting that made room for the cached video
+				listEvicted = peer->getEvictedCache(peer);
+				hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
+				window->setOccupancy(window,getLengthObject(picked));
+				window->setLastChunkAvailable(window,lastAvailableChunk+1);
 
 			}
 
@@ -408,7 +362,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 				listEvicted = peer->getEvictedCache(peer);
 				hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 				window->setOccupancy(window,getLengthObject(picked));
-	            window->setLastChunkAvailable(window,lastAvailableChunk+1);
+				window->setLastChunkAvailable(window,lastAvailableChunk+1);
 
 			}
 		}
@@ -542,7 +496,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		event = queue->dequeue(queue);
 		eventCount++;
 
-		printf(" Clock: %0.2f\n",clock);
+		//printf(" Clock: %0.2f\n",clock);
 		if (!event){
 			fprintf(stderr,"ERROR: simulator.c: run out of events\n");
 			exit(0);
@@ -623,8 +577,6 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			peer->setStartSession(peer, clock);
 
 
-			//short status = peer->getStatus(peer);
-			//if (peer->isUp(peer) && (status == STALL_PEER)){
 			//Queuing A Buffering event
 			timeEvent = clock + 10;
 			event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
@@ -632,9 +584,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			//}
 
 
-			/*timeEvent = clock + 10;
-			event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
-			queue->enqueue(queue, timeEvent, event);*/
+
 
 			//Queuing a LEAVE event
 			timeEvent = clock + peer->getUpSessionDuration(peer);
@@ -649,23 +599,12 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			// Update UP time Stats
 			addUpTimeStatsPeer( peer->getOnStats(peer), (timeEvent>SimTime?(SimTime-clock):(timeEvent-clock)));
 
-			//			//Queuing A Request event
-			//			timeEvent = clock + peer->getRequestTime(peer);
-			//			event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
-			//			queue->enqueue(queue, timeEvent, event);
 
 		}else if(typeEvent == TOPOLOGY){
 
 			topologyCount++;
 			short status = peer->getStatus(peer);
 			processTopologySimulator(idPeer, hashTable, community, sysInfo);
-
-			//			if (peer->isUp(peer) && (status == STALL_PEER)){
-			//				//Queuing A Request event
-			//				timeEvent = clock + 2;
-			//				event  = createEvent((TTimeEvent) timeEvent, BUFFERING, (TOwnerEvent)idPeer);
-			//				queue->enqueue(queue, timeEvent, event);
-			//			}
 
 			//Queuing A Topology manager event
 			timeEvent = clock + (status==STALL_PEER?10:130);
@@ -743,15 +682,10 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			// Update DOWN time Stats
 			addDownTimeStatsPeer( peer->getOnStats(peer), (timeEvent>SimTime?(SimTime-clock):(timeEvent-clock)));
 
-		}else if  (typeEvent == REQUEST) {
-			//&& peer->isUp(peer)
-
-
-			//se houver tempo habil , request, senao playback, apos playback, request,
+		}else if  ((typeEvent == REQUEST)&& peer->isUp(peer)) {
 
 			TWindow *window = player->getWindow(player);
 			long int lastAvailableChunk = window->getLastChunkAvailable(window);
-			//long int lastPlayedObject = window->getLastPlaybackedObj(window);
 
 			if(lastAvailableChunk < player->getCollectionLength(peer->getDataSource(peer))-1 ){
 
@@ -770,9 +704,6 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 					event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 					queue->enqueue(queue, timeEvent, event);
 
-					/*				timeEvent = clock;
-				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
-				queue->enqueue(queue, timeEvent, event);*/
 				}else{
 
 					timeEvent = clock + 2;
@@ -788,22 +719,6 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				printf("Visualização do vídeo finalizada no par :%ld !\n",idPeer);
 			}
 
-			/*else{
-				timeEvent = clock + 2;
-				event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
-				queue->enqueue(queue, timeEvent, event);
-
-			}*/
-
-
-
-
-			/*else{
-				printf("stallRequest\n");
-				timeEvent = clock + 0;
-				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
-				queue->enqueue(queue, timeEvent, event);
-			}*/
 
 		}else if( (typeEvent == FINISHED_VIEWING) && peer->isUp(peer)){
 			finishCount++;
@@ -827,7 +742,11 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 
 			//}else if ((typeEvent == REPLICATE) && (peer->isUp(peer)) ){
-		}else if ( (typeEvent == BUFFERING)){
+		}else if ( (typeEvent == BUFFERING)&& peer->isUp(peer)){
+
+
+			printf("Par: %u , BUFFERIZANDO ...\n",peer->getId(peer));
+			sleep(1);
 
 			player->buffering(idPeer, hashTable, community, sysInfo);
 
@@ -841,7 +760,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 
 			//}else if ((typeEvent == REPLICATE) && (peer->isUp(peer)) ){
-		}else if ( (typeEvent == PLAYBACK) ){
+		}else if ( (typeEvent == PLAYBACK) && peer->isUp(peer)){
 
 			TWindow *window = player->getWindow(player);
 			lengthObj=player->playback(player,hashTable, peer,sysInfo);
@@ -851,22 +770,16 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 
-				printf("Par: %u \n",peer->getId(peer));
-				printf(" Segmento: %ld \n",window->getLastPlaybackedObj(window));
-				/*if (window->getLastPlaybackedObj(window) >8 && window->getLastPlaybackedObj(window)< 12){
+				printf("Par: %u ,",peer->getId(peer));
+				printf("\tSegmento: %ld \n",window->getLastPlaybackedObj(window));
+				if (window->getLastPlaybackedObj(window) >8 && window->getLastPlaybackedObj(window)< 12){
 
 					sleep(1);		            // chamada pro escalonamento.
 				}
 
-				if (window->getLastPlaybackedObj(window) >6128 && window->getLastPlaybackedObj(window)< 6133){
-
-									sleep(1);
-				}*/
-
-
 			}else{
 
-				timeEvent = clock + 2;//@ ajustar o tempo de reproducao
+				timeEvent = clock + 2;
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 
@@ -875,8 +788,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 			if( window->getLastPlaybackedObj(window) == player->getCollectionLength(peer->getDataSource(peer))-1 ){
 
-				//Resetar aq as variaveis da janela;
-				printf("Reset Window and Leave Peer: %u \n",peer->getId(peer));
+
+				printf("Resetting window and leaving the system, Peer: %u \n",peer->getId(peer));
 				window->resetWindow(window);
 				timeEvent = clock+1;
 				event  = createEvent((TTimeEvent) timeEvent, LEAVE, (TOwnerEvent)idPeer);
@@ -886,10 +799,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 
 
-			// chamada pro escalonamento.
 
-			//}else if ((typeEvent == REPLICATE) && (peer->isUp(peer)) ){
-		}else if (typeEvent == REPLICATE ){
+		}else if ((typeEvent == REPLICATE )&& peer->isUp(peer)){
 
 
 			printf("Chamada Replicacao \n");
@@ -915,6 +826,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 		//dequeue processed event
 	}
+	printf("\t\t ###		End of simulation		### \n");
 }
 
 
@@ -929,7 +841,7 @@ int main(int argc, char **argv){
 	float simTime;
 
 
-	simTime = (float)(1.5f*(float)YEARS_TO_SECONDS);
+	simTime = (float)(0.5f*(float)YEARS_TO_SECONDS);
 	warmupTime = 8*HOURS_TO_SECONDS;
 	scale = HOURS_TO_SECONDS;
 
