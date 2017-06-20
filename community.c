@@ -20,6 +20,7 @@
 #include "search.h"
 #include "hierarchy.h"
 #include "player.h"
+#include "replicate.h"
 
 #include <libxml/tree.h>
 #include <libxml/parser.h>
@@ -38,6 +39,7 @@ struct _tier{
 	int startIn;
 	TSearch *searching;
 	TFluctuation *fluctuation;
+	TReplicate *replication;
 };
 
 typedef struct _tiers TTiers;
@@ -279,7 +281,6 @@ static void setupPlayerPeerCommunity(int id, TPeer *peer, xmlDocPtr doc, TSymTab
 		//
 		sprintf(xpath,"/community/tier[%d]/peer/player/policy/parameter[@name=\"dynamic\"]",id+1);
 		xdynamic = xgetOneParameter(doc, xpath);
-
 		xlog->getPars(xlog,xdynamic,pars);
 
 		entry[0]='\0';
@@ -434,6 +435,45 @@ static void* setupFluctuationCommunity(int id, xmlDocPtr doc, TSymTable *fluctua
 	return fluctuation;
 }
 // ############### End Setup Fluctuation
+
+
+
+// ############### Setup Replication
+static void* setupReplicationCommunity(int id, xmlDocPtr doc, TSymTable *replicationST){
+	char xpath[1000]={[0]='\0'};
+	char *xdynamic=NULL;
+	char pars[1000]={[0]='\0'}, *parameter=NULL, *value=NULL;
+	char entry[1000]={[0]='\0'};
+	char *separator = ";";
+	char *last=NULL;
+	char *xsize;
+
+	//sprintf(xpath,"/community/tier[%d]/peer/player/parameter[@name=\"sizeWindow\"]",id+1);
+	sprintf(xpath,"/community/tier[%d]/replicate/policy/parameter[@name=\"bfraction\"]",id+1);
+	xsize = xgetOneParameter(doc, xpath);
+
+	sprintf(xpath,"/community/tier[%d]/replicate/policy/parameter[@name=\"dynamic\"]",id+1);
+	xdynamic = xgetOneParameter(doc, xpath);
+	replicationST->getPars(replicationST,xdynamic,pars);
+
+	entry[0]='\0';
+	parameter = strtok_r(pars, separator, &last);
+	while(parameter){
+		sprintf(xpath,"/community/tier[%d]/replicate/policy/parameter[@name=\"%s\"]",id+1,parameter);
+		value = xgetOneParameter(doc,xpath);
+		sprintf(entry+strlen(entry),"%s;",value); free(value);
+		parameter = strtok_r(NULL, separator, &last);
+	}
+
+	void *policy = replicationST->caller(replicationST,xdynamic,entry);//
+
+	TReplicate *replicate = createDataReplicate(atof (xsize),policy);
+
+	free(xdynamic); // free the dynamic memory allocated by xgetOnParameter
+
+	return replicate;
+}
+// ############### End Setup Replication
 
 
 //Setup Canal
@@ -1038,12 +1078,18 @@ static void fluctuationCommunity(TCommunity *community){
 		}
 	}
 }
-
-
-
-
-
 //
+
+static void replicationCommunity(THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
+	TDataCommunity *data = community->data;
+	//TPeer *peer = vpeer;
+
+
+	TReplicate *replicate = data->tiers->tier[0].replication;
+
+	replicate->run(replicate,hashTable, community, systemData);
+
+}
 
 static void disposeCommunity(TCommunity* community){
 	int i;
@@ -1096,6 +1142,7 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 
 		dataComm->tiers->tier[i].searching = setupSearchingCommunity(i, doc, symTable);
 		dataComm->tiers->tier[i].fluctuation = setupFluctuationCommunity(i, doc, symTable);
+		dataComm->tiers->tier[i].replication = setupReplicationCommunity(i, doc, symTable);
 
 		for(j=0;j<xSize;j++){
 
@@ -1108,9 +1155,8 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 			setupPlayerPeerCommunity(i, p, doc, symTable);
 			setupTopologyManagerPeerCommunity(i, p, doc, symTable);
 			setupProfilePeerCommunity(i, p, doc, symTable);
-			//Canal
 			setupChannelPeerCommunity(i, p, doc, symTable);
-			//setupFluctuationChannelPeerCommunity(i, p, doc, symTable);
+
 
 			dataComm->peers[k] = p;
 			k++;
@@ -1138,6 +1184,7 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 	community->getNumberOfAlivePeer = getNumberOfAlivePeerCommunity;
 	community->searching = searchingCommunity;
 	community->fluctuation = fluctuationCommunity;
+	community->replication = replicationCommunity;
 
 	community->dispose = disposeCommunity;
 

@@ -243,6 +243,10 @@ long int getChunkNumber(TObject *object) {
 	return data->chunkNumber;
 }
 
+int getRepresentationObject(TObject *object) {
+	TDataObject *data = object->data;
+	return data->version;
+}
 int getFoundLevelObject(TObject *object) {
 	TDataObject *data = object->data;
 	return data->foundLevel;

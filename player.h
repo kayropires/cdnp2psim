@@ -30,27 +30,19 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy );
 //Window
 typedef void (* TSetOccupancyWindow)(TWindow *window, float lenghtObject);
 typedef void (* TSetOccupBufferWindow)(TWindow *window, float lenghtObject);
-
-
-
 typedef void (* TSetPlaybackedTime)(TWindow *window, float lenghtObject);
 typedef void (* TSetLastPlaybackedObj)(TWindow *window, long int numberObject);
 typedef void (* TSetLastChunkAvailable)(TWindow *window, long int numberObject);
-
+typedef void (* TSetLastRepresentation)(TWindow *window, int lastRepresentation);
+typedef void (* TSetInstantFlow)(TWindow *window, float instantFlow);
+typedef void (* TSetDownTimeLastChunk)(TWindow *window, float downTime);
 typedef void (* TResetWindow)(TWindow *window);
-
-
-
-
 
 typedef void (* TBufferingPlayer)(unsigned int idPeer, void* hashTable, void* community, void* systemData);
 typedef void* (* TSchedulingPlayer)(void *peer, void *video, void *listPeer,void *picked);
 typedef float (* TPlaybackPlayer)(TPlayer *player,void *hashTable, void *peer, void *systemData);
-
 typedef short (* TStallPlayer)(TPlayer *player);
 typedef void (* TSetStorageWindow)(TWindow *window, void *storage);
-
-
 typedef short (* TSwapStoragePlayer)(TPlayer *player);
 
 //typedef short (* TIsFitInWindow)(TPlayer *player, void *object);
@@ -74,10 +66,13 @@ typedef TOccupBufferWindow(* TGetOccupBufferWindow)(TWindow *window);
 typedef long int (* TGetLastPlaybackedObj)(TWindow *window);
 typedef long int (* TGetLastChunkAvailable)(TWindow *window);
 
+typedef int (* TGetLastRepresentation)(TWindow *window);
+typedef int (* TGetFreqRi)(TWindow *window, int lastRepresentation);
+typedef float (* TGetInstantFlow)(TWindow *window);
+typedef float (* TGetDownTimeLastChunk)(TWindow *window);
+
 typedef float (* TGetPlaybackedTime)(TWindow *window);
 typedef float (* TGetRemainingPlayingTime)(TWindow *window);
-
-
 
 typedef unsigned int (* TGetNumberOfStoredObjectWindow)(TPlayer* player);
 
@@ -86,15 +81,11 @@ struct player{
 	void *data;
 
 	//public methods
-//1 player
-//2 janela
 
 	TBufferingPlayer buffering; //1
 	TSchedulingPlayer scheluding; //1
 	TPlaybackPlayer playback; //1
 	TStallPlayer stall; //1//sugestao estatisticas
-	//TSetStoragePlayer setStorage;
-
 	TSwapStoragePlayer swapStorage;
 	TGetWindow getWindow;
 	TGetDownTimeChunk	getDownTime;
@@ -104,69 +95,41 @@ struct player{
 
 };
 
-
-
-
-
-struct playback{
-
-	//a definir
-	void *availableChunks;
-	void *scheduleChunks;
-
-
-};
-
-
 //Window
 struct window{
 
 	void *data;
 
 	TSchedulingWindow scheluding;
-	//TIsFitInWindow isFitInWindow;
 	THasWindow has;
 	TShowWindow show;
-
 	TGetLevelStorageWindow getLevelStorage;
 	TGetAvailabilityWindow getAvailability;
 	TGetSizeWindow getSize;
-
 	TGetOccupancyWindow getOccupancy;
 	TGetBufferWindow getBuffer;
 	TGetOccupBufferWindow getOccupBuffer;
 	TGetLastPlaybackedObj getLastPlaybackedObj;
-	TGetLastChunkAvailable getLastChunkAvailable;
+	TGetLastChunkAvailable getLastAvailableChunk;
+	TGetLastRepresentation getLastRepresentation;
+	TGetFreqRi getFreqRi;
+	TGetInstantFlow getInstantFlow;
+	TGetDownTimeLastChunk getDownTimeLastChunk;
 	TGetPlaybackedTime getPlaybackedTime;
 	TGetRemainingPlayingTime getRemainingPlayingTime;
-
 	TGetNumberOfStoredObjectWindow getNumberOfStoredObject;
-
 	TSetStorageWindow setStorage;
 	TSetOccupancyWindow setOccupancy;
 	TSetOccupBufferWindow setOccupBuffer;
-
 	TSetPlaybackedTime setPlaybackedTime;
 	TSetLastPlaybackedObj setLastPlaybackedObj;
 	TSetLastChunkAvailable setLastChunkAvailable;
+	TSetLastRepresentation setLastRepresentation;
+	TSetInstantFlow setInstantFlow;
+	TSetDownTimeLastChunk setDownTimeLastChunk;
 
 	TResetWindow resetWindow;
 };
-
-
-//chunk
-struct chunk{
-
-	char ID;
-	float initFlow;
-	float endFlow;
-	float lengthBytes;
-	float duration;
-	int available;  // 0 | 1
-	int reproduced; // 0 | 1
-
-};
-
 
 
 // Politica generica
@@ -178,7 +141,7 @@ typedef void TSWMPolicy;
 //typedef short (* TSWMReplaceGeneralPolicy)(void* systemData, void* cache, void* object);
 typedef void *(* TSWMReplaceGeneralPolicy)(void* peer, void* video, void* listPeers, void** picked, void* policy);
 typedef short (* TSWMUpdateGeneralPolicy)(void* systemData, void* cache, void* object);
-typedef short (* TSWMisFitInSwindowGeneralPolicy)(void* player, void** object);
+typedef short (* TSWMisFitInSwindowGeneralPolicy)(void *player, void *object);
 
 
 //
@@ -201,21 +164,24 @@ struct GeneralPolicySwm{
 	TSWMGeneralPolicy *SWM;
 	TDATAGeneralPolicySwm *data;
 };
-//fim politica generica
-
 
 //Greedy
 typedef struct GreedyPolicy TGreedyPolicy;
 void *createGreedyPolicy(void *entry);
-//void *replaceGreedyPolicy(void *peer, void *video, void *listPeers, void **picked);
-
-
-//short fitsInSwindowGreedyPolicy(void *player, void **object);
-//short fitsInSwindowGreedyPolicy(void* player, void** object);
-
+void *replaceGreedyPolicy(void *peer, void *video, void *listPeers, void **picked, void *policy);
+short fitsInSwindowGreedyPolicy(void *vplayer, void *vobject);
 short updateGreedyPolicy(void* systemData,void* cache, void* object);
 
 
+//Adapt
+typedef struct queue TQueue;
+typedef struct queueElem TQueueElem;
+typedef struct AdaptPolicy TAdaptPolicy;
+typedef struct _data_AdaptPolicy TDATAAdaptPolicy;
+void *createAdaptPolicy(void *entry);
+void *replaceAdaptPolicy(void *peer, void *video, void *listPeers, void **picked, void *policy);
+short fitsInSwindowAdaptPolicy(void *vplayer, void *vobject);
+short updateAdaptPolicy(void* systemData,void* cache, void* object);
 
 
 

@@ -293,16 +293,22 @@ static void* initReplicateSymTable(TDictionary *d){
 	TKeyDictionary key;
 	TDataCreateSymTable *sym;
 
-	sym = malloc(sizeof(TDataCreateSymTable));
+/*	sym = malloc(sizeof(TDataCreateSymTable));
 	key = d->keyGenesis("REPLICATE:NONE");
-	sym->create= (TCreateSymTable)createReplicateNone;
+	sym->create = (TCreateSymTable)createReplicateNone;
 	sprintf(sym->pars,";");
 	d->insert(d,key,sym);
 
 	sym = malloc(sizeof(TDataCreateSymTable));
 	key = d->keyGenesis("REPLICATE:RANDOM");
-	sym->create= (TCreateSymTable)createReplicateRandom;
+	sym->create = (TCreateSymTable)createReplicateRandom;
 	sprintf(sym->pars,"bfraction;swindow");
+	d->insert(d,key,sym);*/
+
+	sym = malloc(sizeof(TDataCreateSymTable));
+	key = d->keyGenesis("REPLICATE:MINIMUMWARRANTY");
+	sym->create = (TCreateSymTable)createMRWPolicy;
+	sprintf(sym->pars,"bfraction;");
 	d->insert(d,key,sym);
 
 	return d;
@@ -351,6 +357,12 @@ static void* initSchedulingPolicySymTable(TDictionary *d){
 	sprintf(sym->pars,";");
 	d->insert(d,key,sym);
 
+	sym = malloc(sizeof(TDataCreateSymTable));
+	key = d->keyGenesis("SP:ADAPT");
+	sym->create = createAdaptPolicy;
+	sprintf(sym->pars,"deltaTime;factorC;bufferMin;bufferLow;bufferMax;representationMax");
+	//sprintf(sym->pars,";");
+	d->insert(d,key,sym);
 
 	return d;
 }

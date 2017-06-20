@@ -281,6 +281,7 @@ struct _data_peer{
 	float startSession;
 	short tier;
     short status;
+    short bufferingStatus;
     TDictionary *Queries;
     //TClassPeer class;
     //TCache *cache;
@@ -323,6 +324,7 @@ TDataPeer *initDataPeer(unsigned int id, short tier, void *dynamicJoin, void *dy
 	data->status = DOWN_PEER;
 	data->tier = tier;
 	data->startSession = 0; //@ startSession
+	data->bufferingStatus = 0;//status da bufferização 1|0
 
 	data->dynamicJoin = dynamicJoin;
 	data->dynamicLeave = dynamicLeave;
@@ -537,10 +539,22 @@ static short getStatusPeer(TPeer *peer){
     return data->status;
 }
 
+static short getBufferingStatusPeer(TPeer *peer){
+	TDataPeer *data = peer->data;
+    return data->bufferingStatus;
+}
+
 static void setStatusPeer(TPeer *peer, short status){
 	TDataPeer *data = peer->data;
     data->status = status;
 }
+
+//
+static void setBufferingStatusPeer(TPeer *peer, short status){
+	TDataPeer *data = peer->data;
+    data->bufferingStatus = status;
+}
+
 
 
 static void setDynamicJoinPeer(TPeer *peer, void *dynamicJoin){
@@ -582,12 +596,22 @@ static unsigned int getRequestTimePeer(TPeer* peer){
 
 }
 
+/*
 static unsigned int getReplicateTimePeer(TPeer* peer){
 	TDataPeer *data = peer->data;
 
 	TRandomic *cycle = getCycleReplicate(data->replicate);
 
 	return cycle->pick(cycle);
+
+}
+*/
+static unsigned int getReplicateTimePeer(TPeer* peer){
+	TDataPeer *data = peer->data;
+	TPlayer *player = peer->getPlayer(peer);
+	TWindow *window = player->getWindow(player);
+
+	return window->getAvailability(window) * getBufferFractionReplicate(data->replicate);
 
 }
 
@@ -1009,6 +1033,7 @@ TPeer* createPeer(unsigned int id,  short tier, void *dynamicJoin, void *dynamic
     p->getReplicate = getReplicatePeer;
     p->getDataSource = getDataSourcePeer;
     p->getCurrentlyViewing = getCurrentlyViewingPeer;
+    p->getBufferingStatus = getBufferingStatusPeer;
     p->setStatus = setStatusPeer;
     p->setDynamicJoin = setDynamicJoinPeer;
     p->setDynamicLeave = setDynamicLeavePeer;
@@ -1017,6 +1042,7 @@ TPeer* createPeer(unsigned int id,  short tier, void *dynamicJoin, void *dynamic
     p->setPlayer = setPlayerPeer;
     p->setDataSource = setDataSourcePeer;
     p->setCurrentlyViewing = setCurrentlyViewingPeer;
+    p->setBufferingStatus = setBufferingStatusPeer;
     p->isUp = isUpPeer;
     p->isDown = isDownPeer;
     p->setupJoining = setupJoiningPeer;

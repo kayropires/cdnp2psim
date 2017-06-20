@@ -91,9 +91,7 @@ typedef void* (* TFirstKCache)(TCache *cache, int k);
 typedef short (* TUpdateCache)(TCache *cache, void *object, void *SystemData);
 typedef short (* TInsertCache)(TCache *cache, void *object, void *SystemData);
 
-
 typedef short (* TRemoveCache)(TCache *cache, void *object, void *SystemData);
-
 
 typedef short (* TIsCacheableCache)(TCache *cache, void *object, void *SystemData);
 typedef short (* THasCache)(TCache *cache, void *object);

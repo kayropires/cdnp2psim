@@ -155,26 +155,29 @@ static void updateRatesLinks(TChannel *channel){
 	upLink->update(upLink);
 	nextRate = upLink->getCurrentRate(upLink) ;
 
-	if(nextRate > lastRate){
+    /*	if(nextRate >= lastRate){
 		newRate = nextRate - lastRate;
 		data->rate_uplink +=newRate;
 	}else{
-		newRate = lastRate - nextRate;
-		data->rate_uplink +=newRate;
-	}
+		//newRate = lastRate - nextRate;
+		data->rate_uplink = nextRate;
+	}*/
+	data->rate_uplink = nextRate;
 
 	//update downLink
 	lastRate = downLink->getCurrentRate(downLink) ;
 	downLink->update(downLink);
 	nextRate = downLink->getCurrentRate(downLink) ;
-
+/*
 	if(nextRate > lastRate){
 		newRate = nextRate - lastRate;
 		data->rate_downlink +=newRate;
 	}else{
-		newRate = lastRate - nextRate;
-		data->rate_downlink +=newRate;
-	}
+		//newRate = lastRate - nextRate;
+		data->rate_downlink =nextRate;
+
+	}*/
+	data->rate_downlink =nextRate;
 
 }
 
@@ -327,7 +330,7 @@ static int getLmRateLink(TLink *link){
 static float getCurrentRateLink(TLink *link){
 
 	TDataLink *data=link->data;
-	float currentRate=data->currentRate;
+	float currentRate = data->currentRate;
 
 	return currentRate;
 }
@@ -492,12 +495,17 @@ float getNextRateFROMFILEPolicy(TLink *link){
 	TFROMFILEPolicy *policy = data->throughputPolicy;
 	FILE *fp=policy->data->fpRates;
 
-	if( !feof(fp) )
-		fscanf(fp,"%f",&nextRate);
-	else{
-		fseek(fp, 0L, SEEK_SET);
-		fscanf(fp,"%f",&nextRate);
+	if( !feof(fp) ){
+
+
+		//fscanf(fp,"%f",&nextRate);
+		if (fscanf(fp,"%f",&nextRate) != 1)
+			{
+			fseek(fp, 0L, SEEK_SET);
+			fscanf(fp,"%f",&nextRate);
+			}
 	}
+
 
 	float maxRate = data->maxRate;
 
@@ -552,33 +560,13 @@ typedef struct _data_fluctuation{
 } TDataFluctuation;
 
 
-
-/*//
-static TLink *getUpLinkChannel(TChannel *channel){
-
-	TDataChannel *data = channel->data;
-
-	return data->upLink;
-}
-static TLink *getDownLinkChannel(TChannel *channel){
-
-	TDataChannel *data = channel->data;
-
-	return data->downLink;
-}*/
-//
-// A Política deve obter os links por meio de um método no channel para atualiza-los.
-
-
-// FLUCTUATION Management
-
 static TDataFluctuation *initDataFluctuation(TGeneralFluctuationPolicy *policy){
 
 	TDataFluctuation *data = malloc(sizeof(TDataFluctuation));
 
 
 	data->policy = policy;
-	data->averageIFT = 0.0;
+	data->averageIFT = 0.0; //Interval Fluctuation
 
 	return data;
 }
@@ -636,7 +624,7 @@ static short updateFluctuation(TFluctuation *fluctuation){
 
 //####################	 Fluctuation MANAGER
 
-// Fluctuation Policy
+// Fluctuation Policy From File
 typedef struct FMFROMFILEPolicy TFMFROMFILEPolicy;
 struct FMFROMFILEPolicy{
 	//

@@ -87,6 +87,11 @@ typedef void (* TUpdateTimeForFluctuationChannelPeer)(TPeer *peer);
 typedef void *(* TGetCurrentlyViewingPeer)(TPeer *peer);
 typedef void (* TSetCurrentlyViewingPeer)(TPeer *peer, void* video);
 
+
+typedef short (*TGetBufferingStatus)(TPeer *peer);
+typedef void (*TSetBufferingStatus )(TPeer *peer, short status);
+
+
 typedef short (* THasCachedPeer)(TPeer *peer, void* object);
 typedef void *(* THasCachedBiggerVersionPeer)(TPeer *peer, void* object);
 
@@ -137,6 +142,9 @@ struct peer {
 
 		TGetCurrentlyViewingPeer getCurrentlyViewing;
 		TSetCurrentlyViewingPeer setCurrentlyViewing;
+
+		TGetBufferingStatus getBufferingStatus;
+		TSetBufferingStatus setBufferingStatus;
 
 		TCanStreamPeer canStream;
 

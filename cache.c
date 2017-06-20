@@ -171,14 +171,6 @@ static void showCache(TCache *cache){
 	printf("\n");
 }
 
-/*static void removeRepCache(TCache *cache){
-	TDataCache *data = cache->data;
-	TListObject *listObject = data->objects;
-
-	listObject->removeRep(listObject);
-
-	printf("\n");
-}*/
 
 //Returns a status that points out whether or not
 //objects were disposed from passed cache

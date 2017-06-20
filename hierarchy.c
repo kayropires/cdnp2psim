@@ -10,31 +10,20 @@
 #include "dictionary.h"
 #include "internals.h"
 
-/*
-#define MAX(x,y) (x>y?x:y)
-#define MIN(x,y) (x<y?x:y)
-*/
-
 static short insertHCache(THCache *hc, int levels, void *object, void* systemData); //@ parametro: levels=nivel a ser acessado
 void putCacheInHCache(THCache *hc, int levels,TCache* cache);
 static short updateHCache(THCache *hc, int levels, void *object,void* systemData);
 static short isCacheableHCache(THCache *hc, int levels,void *object, void* systemData);
-//static void* firstKHCache(THCache* hc, int levels, int K);
-//static short hasHCache(THCache *hc, int levels, void *object);//@ retirar levels
 static short hasHCache(THCache *hc, void *object);
-
 static short disposeHCache(THCache *hc, int levels);
 static void showHCache(THCache *hc, int levels);
-//static void* searchObjectHCache(THCache* hc, void *vObject);
-//static void* searchObjectHCache(THCache* hc, TObject *vObject);
 static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
 static void* searchBiggerVersionHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
 
-//static void removeRepHCache(THCache *hc, int levels, int levels);
+
 
 static TAvailabilityHCache getAvailabilityHCache(THCache* hc, int levels);
 static TSizeCache getSizeHCache(THCache* hc, int levels);
-//static void* getStatsHCache(THCache* hc, int levels);
 static void showStatsHCache(THCache* hc, int levels);
 static void* getDisposedObjectsHCache(THCache* hc, int levels);
 static void* getObjectsHCache(THCache* hc, int level);
@@ -48,7 +37,6 @@ static TOccupancyHCache getOccupancyHCache(THCache *hc, int levels);
 static void addAvailabilityHCache(THCache* hc, int levels, TAvailabilityHCache amount);
 static unsigned int getNumberOfStoredObjectHCache(THCache* hc, int levels);
 
-//@ Primeira
 typedef struct _data_hc TDataHCache;
 
 struct _data_hc{
@@ -60,10 +48,7 @@ struct _data_hc{
 
 	TListObject *objects; // hcd objects
 	TListObject *disposed; // disposed objects by OMPolicyReplacement
-	//TSizeHCache size; // in seconds)
-	//TAvailabilityHCache availability; // in seconds
-	//TStatsHCache *stats;
-	//void *policy;
+
 };
 
 //segunda
@@ -73,38 +58,21 @@ static TDataHCache *initDataHCache(int levels){ //@
 	TDataHCache *data = malloc(sizeof(TDataHCache));
 
 	data->hcache = malloc(levels * sizeof(TCache*));
-	//data->cache = malloc(sizeof(TCache*)*levels);
 	data->levels = levels;
 	data->levelPrincipal=0;
 	data->levelReplicate=1;
 	data->levelStorage=2;
-	//data->levelPrincipal=levelPrincipal;
-
-
-
-		//data->objects = createListObject();
-		//data->disposed = createListObject();
-		//data->size = size;
-		//data->availability = size;
-		//data->stats = createStatsHCache();
-		//data->policy = policy;
-
-
 
 	return data;
 }
 
 
-//THCache *createHCache(int levels, int levelPrincipal, int levelReplicate){
+
 THCache *createHCache(int levels){
 	THCache *hc = (THCache *)malloc(sizeof(THCache));
 
-
-	//hc->data = initDataHCache(levels, levelPrincipal);
 	hc->data = initDataHCache(levels);
 
-	// agora atualizar metodos da hierarquia
-	//hc->firstK=firstKHCache;
 	hc->insert=insertHCache;
 	hc->putCache=putCacheInHCache;
 	hc->update=updateHCache;
@@ -114,12 +82,10 @@ THCache *createHCache(int levels){
 	hc->show = showHCache;
 	hc->search=searchObjectHCache;
 	hc->searchBiggerVersion=searchBiggerVersionHCache;
-	//hc->removeRep = removeRepHCache;
 	hc->dispose = disposeHCache;
 	hc->has = hasHCache;
 	hc->getAvailability=getAvailabilityHCache;
 	hc->getSize=getSizeHCache;
-	//hc->getStats = getStatsHCache;
 	hc->getEvictedObjects=getDisposedObjectsHCache;
 	hc->getObjects=getObjectsHCache;
 	hc->getLevels=getLevelsHCache;
@@ -142,9 +108,7 @@ static short insertHCache(THCache *hc, int levels, void *object, void *systemDat
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
 
-
 	status=cache->insert(cache,object,systemData);
-
 
 	return status;
 }
@@ -153,10 +117,7 @@ static short insertHCache(THCache *hc, int levels, void *object, void *systemDat
 void putCacheInHCache(THCache *hc, int levels,TCache* cache){
 
 	TDataHCache *data = hc->data;
-
 	data->hcache[levels]=cache;
-
-
 }
 
 static short updateHCache(THCache *hc, int levels, void *object, void* systemData){
@@ -177,11 +138,8 @@ static short isCacheableHCache(THCache *hc, int levels, void *object, void* syst
 
 	status = cache->isCacheable(cache, object,systemData);
 
-
-
 	return status;
 }
-
 
 static void showHCache(THCache *hc, int levels ){//Modificar para mostrar o conteudo por nivel
 	TDataHCache *data = hc->data;
@@ -214,14 +172,12 @@ static void showHCache(THCache *hc, int levels ){//Modificar para mostrar o cont
 //Returns a status that points out whether or not
 //objects were disposed from passed hc
 static short disposeHCache(THCache* hc, int levels ){
+
 	short status = 0;
-
-
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
 
 		status = cache->dispose(cache);
-
 
 	return status;
 }
@@ -233,13 +189,7 @@ static short hasHCache(THCache *hc, void *object){
 	 int levels=hc->getLevels(hc);
 	TCache *cache;
 	short found=0;
-//
-//	if(levels!=-1){
-//		slevel=elevel=levels;
-//		cache=data->hcache[slevel];//ERRO tratar...
-//		found = cache->has(cache, object);
-//
-//	}else{
+
 		slevel=0;
 		elevel=levels;
 		while(slevel<elevel && found==0){
@@ -247,61 +197,44 @@ static short hasHCache(THCache *hc, void *object){
 			found = cache->has(cache, object);
 			slevel++;
 		}
-    //} //end else
+
 	return found;
 }
 
 static TOccupancyHCache getOccupancyHCache(THCache *hc, int levels){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
-		return cache->getOccupancy(cache);
+	return cache->getOccupancy(cache);
 }
 
 static TAvailabilityHCache getAvailabilityHCache(THCache* hc, int levels){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
-		return cache->getAvailability(cache);
+	return cache->getAvailability(cache);
 }
 
 static TSizeCache getSizeHCache(THCache* hc, int levels){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
 	return cache->getSize(cache);
 }
 
 static unsigned int getNumberOfStoredObjectHCache(THCache* hc, int levels){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
 	return cache->getNumberOfStoredObject (cache);
 }
 
 
-/*static void* getStatsHCache(THCache* hc, int levels){
-	TDataHCache *data = hc->data;
-	TCache *cache=data->hcache[levels];
-
-	return cache->getStats(cache);
-}*/
-
 static void* getDisposedObjectsHCache(THCache* hc, int levels){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
 	return cache->getEvictedObjects(cache);
 }
 
 static void* getObjectsHCache(THCache* hc, int level){ //@ Tratar com urgencia 02_11_16,existe a necessidade do getObject?
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[level];
-	//int i;
-	//TListObject *objects;
-
-
-
 	return cache->getObjects(cache);
 }
 
@@ -325,29 +258,20 @@ static int getLevelStorageHCache(THCache* hc){
 	return data->levelStorage;
 }
 
-
-
-
 static void* getCache(THCache *hc, int levels ){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
 	return cache;
 }
 
-//
 static void* getStatsHCache(THCache *hc, int levels ){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
-
 	return cache->getStats(cache);
 }
 
-//
-
-
 static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd){ //@
-	//TDataHCache *data = hc->data;
+
 	TCache *cache;
 	TObject *object = vObject;
 	int i;
@@ -360,10 +284,8 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 		exit (0);
 	}else{
 		while(i<levelEnd && storedObject == NULL){
-			//cache=data->hcache[i];
+
 			cache=hc->getCache(hc,i);
-
-
 			listObject = cache->getObjects(cache);
 			if(listObject!=NULL){
 				storedObject = listObject->getObjectSegment(listObject, object);//
@@ -373,10 +295,9 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 	}
 	return storedObject;
 }
-//
 
 static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelInit, int levelEnd){ //@
-	//TDataHCache *data = hc->data;
+
 	TCache *cache;
 	int i,bigger=0;
 	TObject *storedObject=NULL, *auxObject=object;
@@ -388,7 +309,7 @@ static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelIn
 		exit (0);
 	}else{
 		while(i<levelEnd){
-			//cache=data->hcache[i];
+
 
 			cache=hc->getCache(hc,i);
 			listObject = cache->getObjects(cache);
@@ -414,254 +335,22 @@ static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelIn
 	return storedObject;
 }
 
-//
+
 
 static void addAvailabilityHCache(THCache* hc, int levels, TAvailabilityHCache amount){
 	TDataHCache *data = hc->data;
-
 	TCache *cache=data->hcache[levels];
 	cache=cache->data;
 
 		cache->addAvailability(cache,amount);
-
 }
-
 
 static void showStatsHCache(THCache* hc, int levels){
 	TDataHCache *data = hc->data;
 	TCache *cache=data->hcache[levels];
 
 	cache->showStats(cache);
-
-	//showStatsCache(data->cache[levels]);
-
-	/*TStatsHCache *stats = data->stats;
-
-	printf("hit: %d\n", stats->getHit( stats ) );
-	printf("miss: %d\n", stats->getMiss( stats ) );
-	printf("byte hits: %lf\n", stats->getByteHit( stats ) );
-	printf("byte miss: %lf\n", stats->getByteMiss( stats ) );
-	printf("on behalf hit: %d\n", stats->getCommunityHit( stats ) );
-	printf("on behalf byte hit: %lf\n", stats->getByteCommunityHit( stats ) );*/
-
 }
-
-/*
-
-// statistcs related data and functions and types
-static THitStatsHCache getHitStatsHCache(TStatsHCache *stats);
-static TMissStatsHCache getMissStatsHCache(TStatsHCache *stats);
-static TMaxOccupancyStatsHCache getMaxOccupancyStatsHCache(TStatsHCache *stats);
-static TCommunityHitStatsHCache getCommunityHitStatsHCache(TStatsHCache *stats);
-static TByteCommunityHitStatsHCache getByteCommunityHitStatsHCache(TStatsHCache *stats);
-static TByteHitStatsHCache getByteHitStatsHCache(TStatsHCache *stats);
-static TByteMissStatsHCache getByteMissStatsHCache(TStatsHCache *stats);
-
-static void setHitStatsHCache(TStatsHCache *stats, THitStatsHCache hit);
-static void setMissStatsHCache(TStatsHCache *stats, TMissStatsHCache miss);
-static void setMaxOccupancyStatsHCache(TStatsHCache *stats, TMaxOccupancyStatsHCache ocuppancy);
-static void setCommunityHitStatsHCache(TStatsHCache *stats, TCommunityHitStatsHCache communityHits);
-static void setByteCommunityHitStatsHCache(TStatsHCache *stats, TByteCommunityHitStatsHCache ByteCommunityHit);
-static void setByteHitStatsHCache(TStatsHCache *stats, THitStatsHCache hit);
-static void setByteMissStatsHCache(TStatsHCache *stats, TMissStatsHCache miss);
-
-static void addHitStatsHCache(TStatsHCache *stats, THitStatsHCache amount);
-static void addMissStatsHCache(TStatsHCache *stats, TMissStatsHCache amount);
-static void addMaxOccupancyStatsHCache(TStatsHCache *stats, TMaxOccupancyStatsHCache amount);
-static void addCommunityHitStatsHCache(TStatsHCache *stats, TCommunityHitStatsHCache amount);
-static void addByteCommunityHitStatsHCache(TStatsHCache *stats, TByteCommunityHitStatsHCache amount);
-static void addByteHitStatsHCache(TStatsHCache *stats, TByteHitStatsHCache amount);
-static void addByteMissStatsHCache(TStatsHCache *stats, TByteMissStatsHCache amount);
-
-typedef struct _data_StatsHCache TDataStatsHCache;
-struct _data_StatsHCache{
-	THitStatsHCache  hit;
-	TMissStatsHCache miss;
-	TMaxOccupancyStatsHCache maxOccupancy;
-	TCommunityHitStatsHCache communityHit;
-	TByteCommunityHitStatsHCache byteCommunityHit;
-	TByteHitStatsHCache byteHit;
-	TByteMissStatsHCache byteMiss;
-};
-
-
-TDataStatsHCache *initDataStatsHCache(){
-	TDataStatsHCache *data;
-
-	data = malloc(sizeof(TDataStatsHCache));
-	data->communityHit = 0; // hits whenInto servicing community
-	data->byteCommunityHit = 0; //byte community hits when servicing community
-	data->hit = 0; // hits when servicing a peer
-	data->miss = 0; // misses when servicing a peer
-	data->maxOccupancy = 0; // max Occupancy over time
-	data->byteHit = 0; // byte hits when servicing a peer
-	data->byteMiss = 0; // byte misses when servicing a peer
-
-	return data;
-}
-TStatsHCache *createStatsHCache(){
-	TStatsHCache *stats;
-
-	stats = (TStatsHCache*)malloc(sizeof(TStatsHCache));
-
-	stats->data = initDataStatsHCache();
-
-	stats->getHit = getHitStatsHCache;
-	stats->getMiss = getMissStatsHCache;
-	stats->getMaxOccupancy = getMaxOccupancyStatsHCache;
-	stats->getCommunityHit = getCommunityHitStatsHCache;
-	stats->getByteCommunityHit = getByteCommunityHitStatsHCache;
-	stats->getByteHit = getByteHitStatsHCache;
-	stats->getByteMiss = getByteMissStatsHCache;
-
-	stats->setHit = setHitStatsHCache;
-	stats->setMiss = setMissStatsHCache;
-	stats->setMaxOccupancy = setMaxOccupancyStatsHCache;
-	stats->setCommunityHit = setCommunityHitStatsHCache;
-	stats->setByteCommunityHit = setByteCommunityHitStatsHCache;
-	stats->setByteHit = setByteHitStatsHCache;
-	stats->setByteMiss = setByteMissStatsHCache;
-
-	stats->addHit = addHitStatsHCache;
-	stats->addMiss = addMissStatsHCache;
-	stats->addMaxOccupancy = addMaxOccupancyStatsHCache;
-	stats->addCommunityHit = addCommunityHitStatsHCache;
-	stats->addByteCommunityHit = addByteCommunityHitStatsHCache;
-	stats->addByteHit = addByteHitStatsHCache;
-	stats->addByteMiss = addByteMissStatsHCache;
-
-	return stats;
-}
-
-static THitStatsHCache getHitStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->hit;
-}
-
-static TMissStatsHCache getMissStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->miss;
-}
-
-static TMaxOccupancyStatsHCache getMaxOccupancyStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->maxOccupancy;
-}
-
-static TCommunityHitStatsHCache getCommunityHitStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->communityHit;
-}
-
-static TByteCommunityHitStatsHCache getByteCommunityHitStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->byteCommunityHit;
-}
-
-static TByteHitStatsHCache getByteHitStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->byteHit;
-}
-
-static TByteMissStatsHCache getByteMissStatsHCache(TStatsHCache *stats){
-	TDataStatsHCache *data=stats->data;
-
-	return data->byteMiss;
-}
-
-static void setHitStatsHCache(TStatsHCache *stats, THitStatsHCache hit){
-	TDataStatsHCache *data=stats->data;
-
-	data->hit = hit;
-}
-
-static void setMissStatsHCache(TStatsHCache *stats, TMissStatsHCache miss){
-	TDataStatsHCache *data=stats->data;
-
-	data->miss = miss;
-}
-
-static void setMaxOccupancyStatsHCache(TStatsHCache *stats, TMaxOccupancyStatsHCache ocuppancy){
-	TDataStatsHCache *data=stats->data;
-
-	data->maxOccupancy = ocuppancy;
-}
-
-static void setCommunityHitStatsHCache(TStatsHCache *stats, TCommunityHitStatsHCache communityHits){
-	TDataStatsHCache *data=stats->data;
-
-	data->communityHit = communityHits;
-}
-
-static void setByteCommunityHitStatsHCache(TStatsHCache *stats, TByteCommunityHitStatsHCache ByteCommunityHit){
-	TDataStatsHCache *data=stats->data;
-
-	data->byteCommunityHit = ByteCommunityHit;
-}
-
-static void setByteHitStatsHCache(TStatsHCache *stats, THitStatsHCache hit){
-	TDataStatsHCache *data=stats->data;
-
-	data->byteHit = hit;
-}
-
-static void setByteMissStatsHCache(TStatsHCache *stats, TMissStatsHCache miss){
-	TDataStatsHCache *data=stats->data;
-
-	data->byteMiss = miss;
-}
-
-static void addHitStatsHCache(TStatsHCache *stats, THitStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->hit += amount;
-}
-
-static void addMissStatsHCache(TStatsHCache *stats, TMissStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->miss += amount;
-}
-
-static void addMaxOccupancyStatsHCache(TStatsHCache *stats, TMaxOccupancyStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->maxOccupancy += amount;
-}
-
-
-static void addCommunityHitStatsHCache(TStatsHCache *stats, TCommunityHitStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->communityHit += amount;
-}
-
-static void addByteCommunityHitStatsHCache(TStatsHCache *stats, TByteCommunityHitStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->byteCommunityHit += amount;
-}
-
-static void addByteHitStatsHCache(TStatsHCache *stats, TByteHitStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->byteHit += amount;
-}
-
-static void addByteMissStatsHCache(TStatsHCache *stats, TByteMissStatsHCache amount){
-	TDataStatsHCache *data=stats->data;
-
-	data->byteMiss += amount;
-}
-
-*/
-
 
 /*
 int main(){

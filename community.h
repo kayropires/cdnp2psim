@@ -29,7 +29,9 @@ typedef void* (* TGetAlivePeerCommunity)(TCommunity *community);
 typedef int (* TGetNumberOfAlivePeerCommunity)(TCommunity *community);
 typedef void (* TDisposeCommunity)(TCommunity* community);
 typedef void* (* TSearchingCommunity)(TCommunity* community, void *peer, void *object, unsigned int clientId, int prefetch);
-typedef int (* TFluctuationCommunity)(TCommunity* community, void *timeForFluctuation, void *hashTable);
+typedef int (* TFluctuationCommunity)(TCommunity* community);
+typedef int (* TReplicationCommunity)(void* hashTable, TCommunity* community, void* systemData);
+;
 
 struct community{
 	void *data;
@@ -50,6 +52,8 @@ struct community{
 	TGetNumberOfAlivePeerCommunity getNumberOfAlivePeer;
 	TSearchingCommunity searching;
 	TFluctuationCommunity fluctuation;
+	TReplicationCommunity replication;
+	;
 
 	TDisposeCommunity dispose;
 };

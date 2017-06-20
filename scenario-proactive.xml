@@ -92,6 +92,13 @@
 				<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/fluctuation.txt</parameter>
 			</policy>	
 		</fluctuation>
+		<replicate>
+		    <policy>
+				<parameter name="dynamic">REPLICATE:MINIMUMWARRANTY</parameter>
+				<parameter name="bfraction">0.5</parameter>
+			</policy>
+		</replicate>
+		
 		
 		<peer>
 
@@ -120,12 +127,18 @@
 			<player>
 				<parameter name="sizeWindow">10</parameter>
 				<policy>
-					<parameter name="dynamic">SP:GREEDY</parameter>
+					<parameter name="dynamic">SP:ADAPT</parameter>
+					<parameter name="deltaTime">10</parameter>
+					<parameter name="factorC">0.8</parameter>
+					<parameter name="bufferMin">2</parameter>
+					<parameter name="bufferLow">8</parameter>
+					<parameter name="bufferMax">10</parameter>
+					<parameter name="representationMax">7</parameter>
 				</policy>
 			</player>
 			
 			<profile>
-				<parameter name="dynamic">PROFILE:JACCARD</parameter>
+				<parameter name="dynamic">PROFILE:SESSION</parameter>
 				<!-- parameter name="alpha"></parameter -->
 			</profile>
 			<topology>
@@ -140,7 +153,7 @@
 				<parameter name="capacity">768</parameter>
 
 				<uplink>
-					<parameter name="rateUplink">512</parameter>
+					<parameter name="rateUplink">256</parameter>
 					<throughput>
 						<parameter name="dynamic">THROUGHPUT:FROMFILE</parameter>
 						<parameter name="limsup">5</parameter>
@@ -148,7 +161,7 @@
 					</throughput>
 				</uplink>
 				<downlink>
-					<parameter name="rateDownlink">256</parameter>
+					<parameter name="rateDownlink">512</parameter>
 					<throughput>
 						<parameter name="dynamic">THROUGHPUT:FROMFILE</parameter>
 						<parameter name="limsup">5</parameter>
@@ -182,11 +195,9 @@
 					<prefetch>
 						<parameter name="dynamic">PREFETCH:NONE</parameter>
 					</prefetch>
-					<replicate>
-						<parameter name="dynamic">REPLICATE:RANDOM</parameter>
-						<parameter name="bfraction">0.5</parameter>
-						<parameter name="swindow">10</parameter>
-					</replicate>
+					
+					<!-- Replicate moved to comunity-->
+					
 					<access>
 						<parameter name="dynamic">RANDOM:FROMFILESINGLETON</parameter>
 						<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/Padrao_Acesso_ColecaoYouTubeEntretenimento.out</parameter>
