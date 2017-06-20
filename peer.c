@@ -395,7 +395,8 @@ static void updateCacheAsServerPeer(TPeer *serverPeer, void *vObject, void *vSys
 	// get stored copy
 	//listObject = hcacheServerPeer->getObjects(hcacheServerPeer,level);
 	//storedVideo = listObject->getObject(listObject, video);
-	storedVideo = hcacheServerPeer->searchBiggerVersion(hcacheServerPeer, video, 0,3);
+	//storedVideo = hcacheServerPeer->searchBiggerVersion(hcacheServerPeer, video, 0,3);
+	storedVideo = hcacheServerPeer->search(hcacheServerPeer, video, 0,3);
 	if (getFoundLevelObject(storedVideo)>=0){
 			level=getFoundLevelObject(storedVideo);
 

@@ -288,7 +288,11 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 			cache=hc->getCache(hc,i);
 			listObject = cache->getObjects(cache);
 			if(listObject!=NULL){
-				storedObject = listObject->getObjectSegment(listObject, object);//
+				//storedObject = listObject->getObjectSegment(listObject, object);//
+				storedObject = listObject->getObject(listObject, object);//
+				if(storedObject != NULL){
+					setFoundLevelObject(storedObject,i);
+				}
 			}
 			i++;
 		}
@@ -300,8 +304,9 @@ static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelIn
 
 	TCache *cache;
 	int i,bigger=0;
-	TObject *storedObject=NULL, *auxObject=object;
+	TObject *storedObject=NULL, *auxObject;
 	TListObject *listObject;
+	auxObject=object;
 
 	i=levelInit;
 	if (levelInit < 0 || levelInit >  levelEnd) {

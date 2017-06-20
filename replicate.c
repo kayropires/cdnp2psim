@@ -86,7 +86,7 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 			player = peer->getPlayer(peer);
 			window = player->getWindow(player);
 			lastAvailableChunk = window->getLastAvailableChunk(window);
-			float availableWindowTime = 0, tempOccup = 0, tempTime = 0,replicateTime ;
+			float availableWindowTime = 0, tempOccup = 0, occupDownTime = 0,replicateTime ;
 			hc = peer->getHCache(peer);
 			lReplicate = hc->getLevelReplicate(hc);
 			//channel = peer->getChannel(peer);
@@ -97,7 +97,7 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 			//replicateTime = peer->getReplicateTime(peer);
 			replicateTime = availableWindowTime * 0.5;
 			//Enquanto durar o tempo de replicação
-			while(tempOccup < availableWindowTime && tempTime <= replicateTime){
+			while(tempOccup < (availableWindowTime-replicateTime) && occupDownTime <= replicateTime){
 			video = dataSource->pickFromAdaptive(dataSource, version, lastAvailableChunk+=1); //escolher até Limite da metade da janela, entao baixar a 2 metade
 
 			//somar o tempTime com os tempos gastos com a replicação, ( tempo de download)
@@ -111,7 +111,7 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 			getIdObject(video, idVideo);
 			setReplicateObject(video,1);
 
-			if(tempOccup > (availableWindowTime-replicateTime)){
+			if(tempOccup < (availableWindowTime-replicateTime)){
 
 			if (peer->isUp(peer)){
 
@@ -132,7 +132,7 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 
 			}
 			tempOccup+=getLengthObject(video);
-			tempTime+=player->getDownTime(peer,player,((float)getLengthBytesObject(video)));
+			occupDownTime+=player->getDownTime(peer,player,((float)getLengthBytesObject(video)));
 			//calcular tempo de download
 			}//while
 		}

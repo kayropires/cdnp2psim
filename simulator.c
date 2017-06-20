@@ -814,7 +814,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 			printf("Chamada Replicacao \n");
 
-			//community->replication(hashTable, community, sysInfo);
+			community->replication(hashTable, community, sysInfo);
 
 			//minimumWarrantyReplicate(hashTable, community, sysInfo);
 
