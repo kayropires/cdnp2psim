@@ -139,6 +139,10 @@ void initSimulator(int simTime, TCommunity** pCommunity, TPriorityQueue** pQueue
 	event  = createEvent((TTimeEvent) eventTime, REPLICATE, 0);
 	queue->enqueue(queue, eventTime, event);
 
+	eventTime += 30;
+	event  = createEvent((TTimeEvent) eventTime, FLUCTUATION, 0);
+	queue->enqueue(queue, eventTime, event);
+
 	*hashTable = createHashTable((int)LENGTH_VIDEO_CATALOG*LOAD_FACTOR_HASH_TABLE + 7);
 
 
@@ -808,13 +812,12 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		}else if ((typeEvent == REPLICATE )&& peer->isUp(peer)){
 
 
-			//printf("Chamada Replicacao \n");
+			printf("Chamada Replicacao \n");
 
 			//community->replication(hashTable, community, sysInfo);
 
 			//minimumWarrantyReplicate(hashTable, community, sysInfo);
-			printf("Chamada Flutuacao do canal \n");
-			community->fluctuation(community);
+
 
 
 			timeEvent = clock + 5;
@@ -824,7 +827,20 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 
 
-		} else {
+		}else if ((typeEvent == FLUCTUATION )&& peer->isUp(peer)){
+
+			printf("Chamada Flutuacao do canal \n");
+			community->fluctuation(community);
+
+
+			timeEvent = clock + 30;
+			event  = createEvent((TTimeEvent) timeEvent, FLUCTUATION, 0);
+			queue->enqueue(queue, timeEvent, event);
+
+
+
+
+		}else {
 			wtfCount++;
 		}
 
