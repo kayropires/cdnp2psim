@@ -148,7 +148,7 @@ static void updateRatesLinks(TChannel *channel){
 	TLink *upLink = channel->getUpLink(channel);
 	TLink *downLink = channel->getDownLink(channel);
 
-	float lastRate, nextRate,newRate;
+	float lastRate, nextRate;
 
 	//Update upLink
 	lastRate = upLink->getCurrentRate(upLink) ;
@@ -177,7 +177,7 @@ static void updateRatesLinks(TChannel *channel){
 		data->rate_downlink =nextRate;
 
 	}*/
-	data->rate_downlink =nextRate;
+	data->rate_downlink = nextRate;
 
 }
 

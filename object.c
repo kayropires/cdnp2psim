@@ -21,7 +21,7 @@ struct _data_object {
 	float length; // in seconds or milliseconds
 	int lengthBytes;//in Bytes
 	float stored; //in seconds
-	int replicado; // marca conteudo replicado na cache
+	short replicated; // marca conteudo replicado na cache
 	float bitRate; // Overall bit Rate |mode:variable
 	int lPopularity; // local Popularity used for LFU
 	float accessFrequency; //
@@ -65,7 +65,7 @@ TObject* initObject(TIdObject id,int version,int chunkNumber, float length,int l
 	dataObj->length = length; //duration
 	dataObj->lengthBytes = lengthBytes;
 	dataObj->stored = length;
-	dataObj->replicado = 0;
+	dataObj->replicated = 0;
 	dataObj->bitRate = bitRate; //Overall bit rate |mode: variable
 	//dataObj->lPopularity = lPopularity;
 	dataObj->rating = 0.0;
@@ -92,7 +92,7 @@ void copyObject(TObject *src, TObject *dest) {
 	dataDest->length = dataSrc->length;
 	dataDest->lengthBytes = dataSrc->lengthBytes;
 	dataDest->stored = dataSrc->stored;
-	dataDest->replicado = dataSrc->replicado;
+	dataDest->replicated = dataSrc->replicated;
 	dataDest->bitRate = dataSrc->bitRate;
 	dataDest->lPopularity = dataSrc->lPopularity;
 	dataDest->accessFrequency = dataSrc->accessFrequency;
@@ -201,7 +201,7 @@ float getStoredObject(TObject *object) {
 
 int getReplicateObject(TObject *object) {
 	TDataObject *data = object->data;
-	return data->replicado;
+	return data->replicated;
 }
 int getGPopularityObject(TObject *object) {
 	TDataObject *data = object->data;
@@ -373,13 +373,13 @@ short isHigher(TObject *first, TObject *second) {
 
 short isReplicatedObject(TObject *object) {
 	TDataObject *data = object->data;
-	return data->replicado;
+	return data->replicated;
 }
 
-void setReplicateObject(TObject *video,short replicado){
+void setReplicatedObject(TObject *video,short replicated){
 
 TDataObject *data = video->data;
-data->replicado=replicado;
+data->replicated=replicated;
 }
 //
 //
@@ -740,21 +740,23 @@ static void showListObject(TListObject *listObject) {
 }
 */
 
-static short hasListObject(TListObject *listObject, void *object) {
+static void *hasListObject(TListObject *listObject, void *object) {
 	TElemListObject *walk;
 	TDataListObject *dataListObject = listObject->data;
-	short found = 0;
+	//short found = 0;
+	TObject *videoFound=NULL;
 
 	walk = dataListObject->head;
 
-	while (walk != NULL && !found) {
+	while (walk != NULL && videoFound==NULL) {
 		if (isEqualObject(walk->object, object))
-			found = 1;
+			//videoFound = walk->object;
+			videoFound = cloneObject( walk->object);
 		else
 			walk = walk->next;
 	}
 
-	return found;
+	return videoFound;
 }
 
 static void* getNextListObject(TListObject *listObject, void *object) {

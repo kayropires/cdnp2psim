@@ -40,6 +40,7 @@ struct _tier{
 	TSearch *searching;
 	TFluctuation *fluctuation;
 	TReplicate *replication;
+
 };
 
 typedef struct _tiers TTiers;
@@ -54,6 +55,7 @@ struct _data_community{
 	TArrayDynamic *alive;
 	unsigned int *alivePeers;
 	int size;
+	FILE *fpLogCommnunity;
 	TTiers *tiers;
 };
 
@@ -474,6 +476,23 @@ static void* setupReplicationCommunity(int id, xmlDocPtr doc, TSymTable *replica
 	return replicate;
 }
 // ############### End Setup Replication
+
+static void *createLogCommunity(){
+	FILE *fp;
+
+	fp = fopen("/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/logCommunity.txt","a+");
+
+	if(fp == NULL)
+	{
+		printf("Error in creating the log file! community.c, function:setupLogCommunity \n");
+		sleep(3);
+		exit(1);
+	}
+
+	return fp;
+}
+
+
 
 
 //Setup Canal
@@ -1091,6 +1110,21 @@ static void replicationCommunity(THashTable* hashTable, TCommunity* community, T
 
 }
 
+static void logRecordCommunity(TCommunity* community, char* str){
+	TDataCommunity *data = community->data;
+
+	//data->fpLogCommnunity = fopen("/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/logCommunity.txt","a+");
+	fprintf(data->fpLogCommnunity,"%s",str);
+	//fclose(data->fpLogCommnunity);
+
+}
+static void closeLogCommunity(TCommunity* community){
+	TDataCommunity *data = community->data;
+
+	fclose(data->fpLogCommnunity);
+
+}
+
 static void disposeCommunity(TCommunity* community){
 	int i;
 	TDataCommunity *data = community->data;
@@ -1126,6 +1160,7 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 
 	dataComm->peers = (TPeer **)malloc(sizeof(TPeer*)*xSize);
 	dataComm->size = xSize;
+	dataComm->fpLogCommnunity = createLogCommunity();
 	dataComm->alive = createArrayDynamic((int)(xSize*.1));
 	dataComm->alivePeers = (unsigned int *)malloc(sizeof(unsigned int)*xSize);
 	dataComm->tiers = malloc(sizeof(TTiers));;
@@ -1143,6 +1178,7 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 		dataComm->tiers->tier[i].searching = setupSearchingCommunity(i, doc, symTable);
 		dataComm->tiers->tier[i].fluctuation = setupFluctuationCommunity(i, doc, symTable);
 		dataComm->tiers->tier[i].replication = setupReplicationCommunity(i, doc, symTable);
+
 
 		for(j=0;j<xSize;j++){
 
@@ -1185,6 +1221,8 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 	community->searching = searchingCommunity;
 	community->fluctuation = fluctuationCommunity;
 	community->replication = replicationCommunity;
+	community->logRecord = logRecordCommunity;
+	community->closeLog = closeLogCommunity;
 
 	community->dispose = disposeCommunity;
 

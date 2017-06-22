@@ -34,6 +34,7 @@ unsigned long int getLastAccessObject(TObject *object);
 float getAccessFrequencyObject(TObject *object);
 void getIdObject(TObject *object, char* id);
 long int getChunkNumber(TObject *object);
+int getRepresentationObject(TObject *object);
 //int getRepresentationObject(TObject *object);
 int getFoundLevelObject(TObject *object);
 float getRatingObject(TObject *object);
@@ -52,7 +53,7 @@ void setNormalizedByteServedObject(TObject *object, float normalizedByteServed);
 void setRatingObject(TObject *object, float rating);
 void setUploadObject(TObject * object, char* upload);
 void setBitRateObject(TObject *object, float bitRate);
-void setReplicateObject(TObject *video,short replicado);
+void setReplicatedObject(TObject *video,short replicado);
 
 void addStoredObject(TObject *object, int quantum);
 void addNormalizedByteServedObject(TObject *object, int quantum);
@@ -116,7 +117,7 @@ typedef void (*TShowListObject)(TListObject *listObject);
 typedef void (*TRemoveRepListObject)(TListObject *listObject);
 
 
-typedef short (*THasIntoListObject)(TListObject *listObject, void* object);
+typedef void* (*THasIntoListObject)(TListObject *listObject, void* object);
 typedef short (*TIsEmptyListObject)(TListObject *listObject);
 typedef short (*TSetNewHeadListObject)(TListObject *listObject, void* object);
 

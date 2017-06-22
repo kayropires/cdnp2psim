@@ -256,12 +256,14 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	TItemHashTable *item;
 	TPlayer *player;
 	TWindow *window;
-	unsigned int idServerPeer;
+	unsigned int idServerPeer, auxIdServerPeer;
 	TIdObject idVideo;
-	float videoLength,videoLengthBytes,downTime;
+	float videoLength,videoLengthBytes;
+	float instantFlow=0;
 	float zero = 0.f;
 	int occup=0;
 	long int lastAvailableChunk = -1;
+	char str[200];
 
 
 	TPeer *peer = community->getPeer(community, idPeer);
@@ -282,8 +284,18 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 	//if(occup!=0){
 		serverPeer = peer->schedulingWindow(peer, video, listPeers,&picked);
-
 	//}
+		//peer->getId(peer);
+		//getChunkNumber(picked);
+		//getRepresentationObject(picked);
+		//systemData->getTime(systemData);
+		if(serverPeer!=NULL){
+			auxIdServerPeer = serverPeer->getId(serverPeer);
+		}else{
+			auxIdServerPeer = 1000;
+		}
+		sprintf(str, "REQUEST %u %u %li %d %hi %f \n",peer->getId(peer),auxIdServerPeer,getChunkNumber(picked),getRepresentationObject(picked),isReplicatedObject(picked) , systemData->getTime(systemData));
+		community->logRecord(community,str);
 
 
 	if(picked!=NULL){
@@ -313,6 +325,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 		window->setOccupancy(window,getLengthObject(picked));
 		window->setLastChunkAvailable(window,lastAvailableChunk+1);
 		window->setLastRepresentation(window,getRepresentationObject(picked));
+		instantFlow = videoLengthBytes / window->getAverageDownTime(window);
 		//printf("Comecar a assistir da cache: %d %s\n", idPeer, idVideo);
 
 		//Looking UP peers into keepers
@@ -346,6 +359,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 				window->setOccupancy(window,getLengthObject(picked));
 				window->setLastChunkAvailable(window,lastAvailableChunk+1);
 				window->setLastRepresentation(window,getRepresentationObject(picked));
+				instantFlow = videoLengthBytes / player->calcDownTime(peer,player,getLengthBytesObject(picked),serverPeer);
 
 			}
 
@@ -369,12 +383,17 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 				window->setOccupancy(window,getLengthObject(picked));
 				window->setLastChunkAvailable(window,lastAvailableChunk+1);
 				window->setLastRepresentation(window,getRepresentationObject(picked));
+				if(window->getAverageDownTime(window)>0){
+				instantFlow = videoLengthBytes / window->getAverageDownTime(window);
+				}else{
+				instantFlow = (videoLengthBytes / player->calcDownTimeFromServer(peer,player,getLengthBytesObject(picked)) );
+				}
 
 			}
 		}
 	}
 
-	float instantFlow = videoLengthBytes / player->getDownTime(peer,player,videoLengthBytes);
+
 	window->setInstantFlow(window,instantFlow);
 
 	return videoLengthBytes;
@@ -703,10 +722,10 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 					videoLengthBytes = processRequestSimulator(idPeer, hashTable, community, sysInfo);//deve retornar o tempo de download
 
 					//insert stall or next request
-					downTime = player->getDownTime(peer,player,videoLengthBytes);
+					//downTime = window->getDownTimeLastChunk(window);
 
 
-					timeEvent = clock+downTime;
+					timeEvent = clock+window->getDownTimeLastChunk(window);;
 					event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 					queue->enqueue(queue, timeEvent, event);
 					//}
@@ -717,13 +736,10 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 					event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 					queue->enqueue(queue, timeEvent, event);
 
-					printf("Par: %u \n",peer->getId(peer));
+					printf("Par: %u ,",peer->getId(peer));
 					printf("Janela Cheia, postergando requisicao !\n");
 				}
 
-			}else{
-
-				printf("Download do vídeo finalizado no par :%ld !\n",idPeer);
 			}
 
 
@@ -769,7 +785,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 			player = peer->getPlayer(peer);
 			TWindow *window = player->getWindow(player);
-			lengthObj=player->playback(player,hashTable, peer,sysInfo);
+			lengthObj = player->playback(community,player,hashTable, peer,sysInfo);
 			if(lengthObj!=0){
 
 				timeEvent = clock + lengthObj;//@ ajustar o tempo de reproducao
@@ -778,6 +794,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 				printf("Par: %u ,",peer->getId(peer));
 				printf("\tSegmento: %ld \n",window->getLastPlaybackedObj(window));
+
 				if (window->getLastPlaybackedObj(window) >8 && window->getLastPlaybackedObj(window)< 12){
 
 					//sleep(1);		            // chamada pro escalonamento.
@@ -789,6 +806,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 
+				printf("Par: %u ,",peer->getId(peer));
 				printf("\t STALL PLAYBACK \n");
 
 
@@ -797,13 +815,17 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			if( window->getLastPlaybackedObj(window) == player->getCollectionLength(peer->getDataSource(peer))-1 ){
 
 
+
+
+
+				printf("Visualização do video completa \n");
 				printf("Resetting window , Peer: %u \n",peer->getId(peer));
 				window->resetWindow(window);
 				peer->setBufferingStatus(peer,0);
 				timeEvent = clock;
 				event  = createEvent((TTimeEvent) timeEvent, LEAVE, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
-				sleep(1);
+				//sleep(1);
 			}
 
 
@@ -815,11 +837,6 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			printf("Chamada Replicacao \n");
 
 			community->replication(hashTable, community, sysInfo);
-
-			//minimumWarrantyReplicate(hashTable, community, sysInfo);
-
-
-
 			timeEvent = clock + 5;
 			event  = createEvent((TTimeEvent) timeEvent, REPLICATE, 0);
 			queue->enqueue(queue, timeEvent, event);
@@ -846,6 +863,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 		//dequeue processed event
 	}
+
+	community->closeLog(community);
 	printf("\t\t ###		End of simulation		### \n");
 }
 

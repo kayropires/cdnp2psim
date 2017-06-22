@@ -94,7 +94,7 @@ typedef short (* TInsertCache)(TCache *cache, void *object, void *SystemData);
 typedef short (* TRemoveCache)(TCache *cache, void *object, void *SystemData);
 
 typedef short (* TIsCacheableCache)(TCache *cache, void *object, void *SystemData);
-typedef short (* THasCache)(TCache *cache, void *object);
+typedef void *(* THasCache)(TCache *cache, void *object);
 typedef short (* TDisposeCache)(TCache* cache);
 typedef void (* TShowCache)(TCache* cache);
 typedef void (* TRemoveRepCache)(TCache* cache);

@@ -14,7 +14,7 @@ static short insertHCache(THCache *hc, int levels, void *object, void* systemDat
 void putCacheInHCache(THCache *hc, int levels,TCache* cache);
 static short updateHCache(THCache *hc, int levels, void *object,void* systemData);
 static short isCacheableHCache(THCache *hc, int levels,void *object, void* systemData);
-static short hasHCache(THCache *hc, void *object);
+static void *hasHCache(THCache *hc, void *object);
 static short disposeHCache(THCache *hc, int levels);
 static void showHCache(THCache *hc, int levels);
 static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
@@ -183,22 +183,23 @@ static short disposeHCache(THCache* hc, int levels ){
 }
 
 
-static short hasHCache(THCache *hc, void *object){
+static void *hasHCache(THCache *hc, void *object){
 	TDataHCache *data = hc->data;
 	int slevel,elevel;
 	 int levels=hc->getLevels(hc);
 	TCache *cache;
-	short found=0;
+	TObject *videoFound=NULL;
+	//short found=0;
 
 		slevel=0;
 		elevel=levels;
-		while(slevel<elevel && found==0){
+		while(slevel<elevel && videoFound==NULL){
 			cache=data->hcache[slevel];
-			found = cache->has(cache, object);
+			videoFound = cache->has(cache, object);
 			slevel++;
 		}
 
-	return found;
+	return videoFound;
 }
 
 static TOccupancyHCache getOccupancyHCache(THCache *hc, int levels){

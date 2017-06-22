@@ -427,26 +427,30 @@ static void updateCachePeer(TPeer *peer, void *vObject, void *vSystemData){
 	video = vObject;
 	// update cache
 	THCache *hc = data->hc;
-	int lPrincipal=hc->getLevelPrincipal(hc);
+	//int lPrincipal=hc->getLevelPrincipal(hc);
 
 	long int number = getChunkNumber(vObject);
 	long int number2 = getChunkNumber(video);
 
-	hc->update(hc,lPrincipal, vObject, systemData);
+	//hc->update(hc,lPrincipal, vObject, systemData);
+
 
 	// record a hit
-	TStatsCache *statsCache = hc->getStats(hc,lPrincipal);
-	statsCache->addHit( statsCache , 1);
+
 
 	// get stored copy
-	TListObject *listObject = hc->getObjects(hc,lPrincipal);
+	//TListObject *listObject = hc->getObjects(hc,lPrincipal);
 	//storedVideo = listObject->getObject(listObject, video);
-	storedVideo = listObject->getObjectSegment(listObject,vObject);
+	storedVideo = hc->search(hc,vObject,0,hc->getLevels(hc));
+	int level = getFoundLevelObject(storedVideo);
+	TStatsCache *statsCache = hc->getStats(hc,level);
+	statsCache->addHit( statsCache , 1);
 	if (storedVideo == NULL)
 		printf("Nao achou o video\n");
 
 	statsCache->addByteHit( statsCache, getStoredObject(storedVideo) );
 	statsCache->addByteMiss( statsCache, getLengthObject(storedVideo) - getStoredObject(storedVideo) );
+	setFoundLevelObject(storedVideo,-1);
 
 }
 
@@ -823,12 +827,12 @@ static short hasDownlinkPeer(TPeer* peer, TObject *video,  float prefetchFractio
 	return channel->hasDownlink(channel, bitRate);
 }
 
-static short hasCachedPeer(TPeer* peer, void *object){
+static void *hasCachedPeer(TPeer* peer, void *object){
 	TDataPeer *data = peer->data;
 	THCache *hc = data->hc;
 
 	return hc->has(hc, object);
-	//return (data->status == DOWN_PEER);
+
 }
 
 //

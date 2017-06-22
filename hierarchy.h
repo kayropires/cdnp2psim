@@ -22,7 +22,7 @@ typedef short (* TInsertHCache)(THCache *hc, int levels, void *object, void *Sys
 typedef void (* TPutCacheInHCache)(THCache *hc, int levels,void* cache);
 
 typedef short (* TIsHCacheableHCache)(THCache *hc, void *object, void *SystemData);
-typedef short (* THasHCache)(THCache *hc, void *object);
+typedef void* (* THasHCache)(THCache *hc, void *object);
 typedef short (* TDisposeHCache)(THCache* hc);
 typedef void (* TShowHCache)(THCache* hc);
 typedef void* (*TSearchHCache)(THCache* hc, void *vObject, int levelInit, int levelEnd);

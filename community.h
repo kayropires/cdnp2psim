@@ -31,6 +31,11 @@ typedef void (* TDisposeCommunity)(TCommunity* community);
 typedef void* (* TSearchingCommunity)(TCommunity* community, void *peer, void *object, unsigned int clientId, int prefetch);
 typedef int (* TFluctuationCommunity)(TCommunity* community);
 typedef int (* TReplicationCommunity)(void* hashTable, TCommunity* community, void* systemData);
+typedef void (* TLogRecord)(TCommunity* community, char* str);
+typedef void (* TCloseLog)(TCommunity* community);
+
+
+
 ;
 
 struct community{
@@ -53,7 +58,9 @@ struct community{
 	TSearchingCommunity searching;
 	TFluctuationCommunity fluctuation;
 	TReplicationCommunity replication;
-	;
+	TLogRecord logRecord;
+	TCloseLog closeLog;
+
 
 	TDisposeCommunity dispose;
 };

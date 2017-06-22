@@ -17,7 +17,7 @@ static short removeCache(TCache *cache, void *object, void* systemData);
 static short updateCache(TCache *cache, void *object,void* systemData);
 static short isCacheableCache(TCache *cache, void *object, void* systemData);
 static void* firstKCache(TCache* cache, int K);
-static short hasCache(TCache *cache, void *object);
+static void *hasCache(TCache *cache, void *object);
 static short disposeCache(TCache *cache);
 static void showCache(TCache *cache);
 //static void removeRepCache(TCache *cache);
@@ -202,11 +202,12 @@ static short disposeCache(TCache* cache){
 }
 
 
-static short hasCache(TCache *cache, void *object){
+static void *hasCache(TCache *cache, void *object){
 	TDataCache *data = cache->data;
-	short found = data->objects->hasInto(data->objects, object);
+	TObject *videoFound=NULL;
+	videoFound = data->objects->hasInto(data->objects, object);
 
-	return found;
+	return videoFound;
 
 }
 

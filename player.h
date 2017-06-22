@@ -40,7 +40,7 @@ typedef void (* TResetWindow)(TWindow *window);
 
 typedef void (* TBufferingPlayer)(unsigned int idPeer, void* hashTable, void* community, void* systemData);
 typedef void* (* TSchedulingPlayer)(void *peer, void *video, void *listPeer,void *picked);
-typedef float (* TPlaybackPlayer)(TPlayer *player,void *hashTable, void *peer, void *systemData);
+typedef float (* TPlaybackPlayer)(void *community, TPlayer *player,void *hashTable, void *peer, void *systemData);
 typedef short (* TStallPlayer)(TPlayer *player);
 typedef void (* TSetStorageWindow)(TWindow *window, void *storage);
 typedef short (* TSwapStoragePlayer)(TPlayer *player);
@@ -55,7 +55,11 @@ typedef short (* TGetLevelStorageWindow)(TWindow* window);
 typedef TAvailabilityWindow (* TGetAvailabilityWindow)(TWindow* window);
 typedef TSizeWindow (* TGetSizeWindow)(TWindow* window);
 typedef TWindow *(* TGetWindow)(TPlayer* player);
-typedef float (* TGetDownTimeChunk)(void *peer, TPlayer *player, float lenghtObject);
+//typedef float (* TCalcDownTimeChunk)(void *peer, TPlayer *player, float lenghtObject);
+typedef float (* TCalcDownTimeChunk)(void *peer, TPlayer *player, float lengthBytes, void *serverPeer);
+typedef float (* TCalcDownTimeFromServer)(void *peer, TPlayer *player, float lengthBytes);
+
+
 
 typedef long int (* TGetCollectionLength)(void *datasource);
 
@@ -70,6 +74,8 @@ typedef int (* TGetLastRepresentation)(TWindow *window);
 typedef int (* TGetFreqRi)(TWindow *window, int lastRepresentation);
 typedef float (* TGetInstantFlow)(TWindow *window);
 typedef float (* TGetDownTimeLastChunk)(TWindow *window);
+typedef float (* TGetAverageDownTime)(TWindow *window);
+
 
 typedef float (* TGetPlaybackedTime)(TWindow *window);
 typedef float (* TGetRemainingPlayingTime)(TWindow *window);
@@ -88,7 +94,8 @@ struct player{
 	TStallPlayer stall; //1//sugestao estatisticas
 	TSwapStoragePlayer swapStorage;
 	TGetWindow getWindow;
-	TGetDownTimeChunk	getDownTime;
+	TCalcDownTimeChunk	calcDownTime;
+	TCalcDownTimeFromServer calcDownTimeFromServer;
 	TGetCollectionLength getCollectionLength;
 
 
@@ -115,6 +122,7 @@ struct window{
 	TGetFreqRi getFreqRi;
 	TGetInstantFlow getInstantFlow;
 	TGetDownTimeLastChunk getDownTimeLastChunk;
+	TGetAverageDownTime getAverageDownTime;
 	TGetPlaybackedTime getPlaybackedTime;
 	TGetRemainingPlayingTime getRemainingPlayingTime;
 	TGetNumberOfStoredObjectWindow getNumberOfStoredObject;

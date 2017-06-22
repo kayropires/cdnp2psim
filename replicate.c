@@ -109,7 +109,7 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 	//		if (video == NULL )	return;
 
 			getIdObject(video, idVideo);
-			setReplicateObject(video,1);
+			setReplicatedObject(video,1);
 
 			if(tempOccup < (availableWindowTime-replicateTime)){
 
@@ -125,6 +125,9 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 					// updating hash table due to evicting that made room for the cached video
 					listEvicted = peer->getEvictedCache(peer);
 					hashTable->removeEvictedItens(hashTable, i, listEvicted);
+					char str[200];
+					sprintf(str, "REPLICATE %u %li %d %f \n",peer->getId(peer),getChunkNumber(video),getRepresentationObject(video), systemData->getTime(systemData));
+					community->logRecord(community,str);
 				}
 
 
@@ -132,7 +135,8 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 
 			}
 			tempOccup+=getLengthObject(video);
-			occupDownTime+=player->getDownTime(peer,player,((float)getLengthBytesObject(video)));
+			//occupDownTime+= player->calcDownTime(peer,player,((float)getLengthBytesObject(video)));
+			occupDownTime+= window->getAverageDownTime(window);
 			//calcular tempo de download
 			}//while
 		}
