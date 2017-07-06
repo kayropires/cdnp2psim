@@ -274,6 +274,8 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	int lPrincipal=hc->getLevelPrincipal(hc); //@
 	dataSource = peer->getDataSource(peer);
 
+
+
 	video = dataSource->pickFromAdaptive(dataSource,0,lastAvailableChunk+1); // Retornando sequencialmente o padrão de acesso !
 
 
@@ -298,15 +300,15 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 		community->logRecord(community,str);
 
 
-	if(picked!=NULL){
+	//if(picked!=NULL){
 
 		videoLengthBytes = (float)(getLengthBytesObject(picked));
-	}else{
+	/*}else{
 		picked=video;
 		videoLengthBytes = (float)(getLengthBytesObject(picked));
 
 
-	}
+	}*/
 
 
 	// for on-going request, update dispatch requests
@@ -315,9 +317,26 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 	if (serverPeer == peer ){
 
 
+		cloneVideo=cloneObject(picked);
+					if ( peer->insertCache( peer, cloneVideo , systemData, lPrincipal ) ){
+						getIdObject(cloneVideo, idVideo);
+
+						item = createItemHashTable();
+						item->set(item, idPeer, peer, idVideo, cloneVideo);
+						hashTable->insert(hashTable, item);
+						item->dispose(item);
+
+						// updating hash table due to evicting that made room for the cached video
+						listEvicted = peer->getEvictedCache(peer);
+						hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
+						window->setOccupancy(window,getLengthObject(cloneVideo));
+						window->setLastChunkAvailable(window,lastAvailableChunk+1);
+						window->setLastRepresentation(window,getRepresentationObject(cloneVideo));
+					}
+						//instantFlow = 0;
 
 
-		peer->updateCache(peer, picked, systemData);
+/*		peer->updateCache(peer, picked, systemData);
 		listEvicted = peer->getEvictedCache(peer);
 		hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 		getIdObject(picked, idVideo);
@@ -325,7 +344,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 		window->setOccupancy(window,getLengthObject(picked));
 		window->setLastChunkAvailable(window,lastAvailableChunk+1);
 		window->setLastRepresentation(window,getRepresentationObject(picked));
-		instantFlow = videoLengthBytes / window->getAverageDownTime(window);
+		instantFlow = videoLengthBytes / window->getAverageDownTime(window);*/
 		//printf("Comecar a assistir da cache: %d %s\n", idPeer, idVideo);
 
 		//Looking UP peers into keepers
@@ -346,20 +365,20 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 
 			cloneVideo=cloneObject(picked);
 			if ( peer->insertCache( peer, cloneVideo , systemData, lPrincipal ) ){
-				getIdObject(picked, idVideo);
+				getIdObject(cloneVideo, idVideo);
 
 				item = createItemHashTable();
-				item->set(item, idPeer, peer, idVideo, picked);
+				item->set(item, idPeer, peer, idVideo, cloneVideo);
 				hashTable->insert(hashTable, item);
 				item->dispose(item);
 
 				// updating hash table due to evicting that made room for the cached video
 				listEvicted = peer->getEvictedCache(peer);
 				hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
-				window->setOccupancy(window,getLengthObject(picked));
+				window->setOccupancy(window,getLengthObject(cloneVideo));
 				window->setLastChunkAvailable(window,lastAvailableChunk+1);
-				window->setLastRepresentation(window,getRepresentationObject(picked));
-				instantFlow = videoLengthBytes / player->calcDownTime(peer,player,getLengthBytesObject(picked),serverPeer);
+				window->setLastRepresentation(window,getRepresentationObject(cloneVideo));
+				instantFlow = videoLengthBytes / player->calcDownTime(peer,player,getLengthBytesObject(cloneVideo),serverPeer);
 
 			}
 
@@ -370,23 +389,23 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 			//try to insert missed video
 			cloneVideo=cloneObject(picked);
 			if ( peer->insertCache( peer, cloneVideo , systemData, lPrincipal ) ){
-				getIdObject(picked, idVideo);
+				getIdObject(cloneVideo, idVideo);
 
 				item = createItemHashTable();
-				item->set(item, idPeer, peer, idVideo, picked);
+				item->set(item, idPeer, peer, idVideo, cloneVideo);
 				hashTable->insert(hashTable, item);
 				item->dispose(item);
 
 				// updating hash table due to evicting that made room for the cached video
 				listEvicted = peer->getEvictedCache(peer);
 				hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
-				window->setOccupancy(window,getLengthObject(picked));
+				window->setOccupancy(window,getLengthObject(cloneVideo));
 				window->setLastChunkAvailable(window,lastAvailableChunk+1);
-				window->setLastRepresentation(window,getRepresentationObject(picked));
+				window->setLastRepresentation(window,getRepresentationObject(cloneVideo));
 				if(window->getAverageDownTime(window)>0){
 				instantFlow = videoLengthBytes / window->getAverageDownTime(window);
 				}else{
-				instantFlow = (videoLengthBytes / player->calcDownTimeFromServer(peer,player,getLengthBytesObject(picked)) );
+				instantFlow = (videoLengthBytes / player->calcDownTimeFromServer(peer,player,getLengthBytesObject(cloneVideo)) );
 				}
 
 			}
@@ -536,9 +555,6 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		event->ufree(event);
 
 		peer = community->getPeer(community, idPeer);
-		//player = peer->getPlayer(peer);
-
-
 
 		sysInfo->setTime(sysInfo, clock);
 
@@ -685,7 +701,13 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			// change the peer status to DOWN
 			leaveCount++;
 			peer->setStatus(peer, DOWN_PEER);
+			TPlayer *player = peer->getPlayer(peer);
+			TWindow *window = player->getWindow(player);
+
 			printf("Leaving the system, Peer: %u \n",peer->getId(peer));
+			printf("Resetting window , Peer: %u \n",peer->getId(peer));
+			window->resetWindow(window);
+			peer->setBufferingStatus(peer,0);
 
 			// Interrompe visualização do vídeo
 			processFinishedViewingSimulator(peer, community);
@@ -715,7 +737,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 			if(lastAvailableChunk < player->getCollectionLength(peer->getDataSource(peer))-1 ){
 
 
-				if (window->getAvailability(window)>=2){
+				if (window->getAvailability(window)>= 2){
 
 					//Processing Request event
 					watchCount++;
@@ -723,6 +745,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 					//insert stall or next request
 					//downTime = window->getDownTimeLastChunk(window);
+
 
 
 					timeEvent = clock+window->getDownTimeLastChunk(window);;
@@ -736,8 +759,12 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 					event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 					queue->enqueue(queue, timeEvent, event);
 
-					printf("Par: %u ,",peer->getId(peer));
-					printf("Janela Cheia, postergando requisicao !\n");
+					/*					printf("Par: %u ,",peer->getId(peer));
+					printf("Janela Cheia, postergando requisicao !\n");*/
+
+					char str[200];
+					sprintf(str, "REQUEST %u %li STALL %f \n",peer->getId(peer), window->getLastAvailableChunk(window), sysInfo->getTime(sysInfo));
+					community->logRecord(community,str);
 				}
 
 			}
@@ -792,13 +819,9 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 
-				printf("Par: %u ,",peer->getId(peer));
-				printf("\tSegmento: %ld \n",window->getLastPlaybackedObj(window));
+				/*			printf("Par: %u ,",peer->getId(peer));
+				printf("\tSegmento: %ld \n",window->getLastPlaybackedObj(window));*/
 
-				if (window->getLastPlaybackedObj(window) >8 && window->getLastPlaybackedObj(window)< 12){
-
-					//sleep(1);		            // chamada pro escalonamento.
-				}
 
 			}else{
 
@@ -806,9 +829,8 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 
-				printf("Par: %u ,",peer->getId(peer));
-				printf("\t STALL PLAYBACK \n");
-
+				/*			printf("Par: %u ,",peer->getId(peer));
+				printf("\t STALL PLAYBACK \n");*/
 
 			}
 
@@ -819,40 +841,45 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 
 				printf("Visualização do video completa \n");
-				printf("Resetting window , Peer: %u \n",peer->getId(peer));
-				window->resetWindow(window);
-				peer->setBufferingStatus(peer,0);
-				timeEvent = clock;
+
+				timeEvent = clock+1;
 				event  = createEvent((TTimeEvent) timeEvent, LEAVE, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
-				//sleep(1);
+
 			}
 
 
 
 
-		}else if ((typeEvent == REPLICATE )&& peer->isUp(peer)){
+		}else if ( typeEvent == REPLICATE ){
 
-
-			printf("Chamada Replicacao \n");
 
 			community->replication(hashTable, community, sysInfo);
-			timeEvent = clock + 5;
+
+			timeEvent = clock + 10;
 			event  = createEvent((TTimeEvent) timeEvent, REPLICATE, 0);
 			queue->enqueue(queue, timeEvent, event);
 
 
 
 
-		}else if ((typeEvent == FLUCTUATION )&& peer->isUp(peer)){
 
-			printf("Chamada Flutuacao do canal \n");
-			community->fluctuation(community);
+		}else if (typeEvent == FLUCTUATION ){
 
+			//	printf("Chamada Flutuacao do canal \n");
 
-			timeEvent = clock + 30;
+			float nextIntervalFluctuation;
+			TChannel *channel = peer->getChannel(peer);
+
+			nextIntervalFluctuation = community->fluctuation(community);
+
+			timeEvent = clock + nextIntervalFluctuation;
 			event  = createEvent((TTimeEvent) timeEvent, FLUCTUATION, 0);
 			queue->enqueue(queue, timeEvent, event);
+
+			char str[200];
+			sprintf(str, "FLUCTUATION %f %f %f %f \n", nextIntervalFluctuation, channel->getDLRate(channel), channel->getULRate(channel), sysInfo->getTime(sysInfo));
+			community->logRecord(community,str);
 
 
 
@@ -880,7 +907,8 @@ int main(int argc, char **argv){
 	float simTime;
 
 
-	simTime = (float)(0.2f*(float)YEARS_TO_SECONDS);
+	//simTime = (float)(0.1f*(float)YEARS_TO_SECONDS);
+	simTime = 35300; //warmuptime + video duration
 	warmupTime = 8*HOURS_TO_SECONDS;
 	scale = HOURS_TO_SECONDS;
 

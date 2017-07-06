@@ -110,7 +110,7 @@ static short canStreamDataChannel(TChannel *channel, float rate){
 	return data->rate_uplink > rate ? 1 : 0;
 }
 
-static float getULRateChannel(TChannel *channel){
+/*static float getULRateChannel(TChannel *channel){
 	TDataChannel *data = channel->data;
 
 	return data->max_uplink - data->rate_uplink;
@@ -120,8 +120,18 @@ static float getDLRateChannel(TChannel *channel){
 	TDataChannel *data = channel->data;
 
 	return data->max_downlink - data->rate_downlink;
+}*/
+static float getULRateChannel(TChannel *channel){
+	TDataChannel *data = channel->data;
+
+	return data->rate_uplink;
 }
 
+static float getDLRateChannel(TChannel *channel){
+	TDataChannel *data = channel->data;
+
+	return data->rate_downlink;
+}
 
 //
 static TLink *getUpLinkChannel(TChannel *channel){
@@ -496,8 +506,6 @@ float getNextRateFROMFILEPolicy(TLink *link){
 	FILE *fp=policy->data->fpRates;
 
 	if( !feof(fp) ){
-
-
 		//fscanf(fp,"%f",&nextRate);
 		if (fscanf(fp,"%f",&nextRate) != 1)
 			{
@@ -696,11 +704,12 @@ short updateFluctuationFROMFILEPolicy(TFluctuation *fluctuation){
 
 		FILE *fp = policy->data->fpSourceIFT;
 
-		if( !feof(fp) )
-			fscanf(fp,"%f",&nextTimeForFlow);
-		else{
+		if( !feof(fp) ){
+			if( fscanf(fp,"%f",&nextTimeForFlow) != 1){
+
 			fseek(fp, 0L, SEEK_SET);
 			fscanf(fp,"%f",&nextTimeForFlow);
+			}
 		}
 
 		data->currentIFT = nextTimeForFlow;

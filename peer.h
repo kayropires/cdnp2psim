@@ -138,7 +138,7 @@ struct peer {
 		//Canal		
 		TGetChannelPeer getChannel;
 		TSetChannelPeer setChannel;
-		TUpdateTimeForFluctuationChannelPeer updateTimeForFluctuation;
+		TUpdateTimeForFluctuationChannelPeer channelRatesFluctuation;
 
 		TGetCurrentlyViewingPeer getCurrentlyViewing;
 		TSetCurrentlyViewingPeer setCurrentlyViewing;

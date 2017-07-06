@@ -146,7 +146,7 @@ struct fluctuation{
 	void *data;
 	TUpdateFluctuation update;
 	TGetCurrentTimeForFluctuation getCurrentIFT;
-	TGetNextTimeForFluctuation getNextTimeForFluctuation;
+	//TGetNextTimeForFluctuation getNextTimeForFluctuation;
 	TGetlmTimeForFluctuation getlmTimeForFluctuation;
 	TGetAverageTimeForFluctuation getAverageIFT;
 	TsetAverageTimeForFluctuation setAverageTimeForFluctuation;

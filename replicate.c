@@ -58,91 +58,90 @@ struct MRWPolicy{
 
 void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
 	//short status = 0;
-	TObject* video;
-		TIdObject idVideo;
-		TListObject *listEvicted;
-		//TPeer* serverPeer;
-		TPeer *peer;
-		THCache *hc;
-		TDataSource* dataSource;
-		TItemHashTable *item;
-		TPlayer *player;
-		TWindow *window;
-		//unsigned int idServerPeer;
-		TChannel* channel;
-		//	float prefetchRate;
-		int version=0,lReplicate; //Level Replicate
-		long int lastAvailableChunk,replicateChunk;
+	TObject* video, *cloneVideo;
+	TIdObject idVideo;
+	TListObject *listEvicted;
+	//TPeer* serverPeer;
+	TPeer *peer;
+	THCache *hc;
+	TDataSource* dataSource;
+	TItemHashTable *item;
+	TPlayer *player;
+	TWindow *window;
+	//unsigned int idServerPeer;
+	//TChannel* channel;
+	//	float prefetchRate;
+	int version,lReplicate; //Level Replicate
+	version=0;
+	long int lastAvailableChunk;
 
 
-		int sizeComm = community->getSize(community); //obtem tamanho da comunidade
-		unsigned int i;
+	int sizeComm = community->getSize(community); //obtem tamanho da comunidade
+	unsigned int i;
 
-		printf("Replicacao com garantia minima \n");
+	//printf("Replicacao com garantia minima \n");
 
-		for(i=0;i<sizeComm;i++){
+	for(i=0;i<sizeComm;i++){
 
-			peer = community->getPeer(community, i);
-			player = peer->getPlayer(peer);
-			window = player->getWindow(player);
+		peer = community->getPeer(community, i);
+		player = peer->getPlayer(peer);
+		window = player->getWindow(player);
+		if ( ( peer->getBufferingStatus(peer) == 1)  && peer->isUp(peer) && window->getLastAvailableChunk(window) < 6000) {
+
+
+
 			lastAvailableChunk = window->getLastAvailableChunk(window);
 			float availableWindowTime = 0, tempOccup = 0, occupDownTime = 0,replicateTime ;
 			hc = peer->getHCache(peer);
 			lReplicate = hc->getLevelReplicate(hc);
-			//channel = peer->getChannel(peer);
-			//TLink *downLink = channel->getDownLink(channel);
-			//float currentDownRate = downLink->getCurrentRate(downLink);
 			dataSource = peer->getDataSource(peer);
 			availableWindowTime = window->getAvailability(window);
-			//replicateTime = peer->getReplicateTime(peer);
 			replicateTime = availableWindowTime * 0.5;
-			//Enquanto durar o tempo de replicação
-			while(tempOccup < (availableWindowTime-replicateTime) && occupDownTime <= replicateTime){
-			video = dataSource->pickFromAdaptive(dataSource, version, lastAvailableChunk+=1); //escolher até Limite da metade da janela, entao baixar a 2 metade
 
-			//somar o tempTime com os tempos gastos com a replicação, ( tempo de download)
-			//Perguntar do par se o conteúdo a ser replicado eh menor que a janela deslizante
+			while(tempOccup < (availableWindowTime-replicateTime) && occupDownTime <= replicateTime){
+				video = dataSource->pickFromAdaptive(dataSource, version, lastAvailableChunk+=1); //escolher até Limite da metade da janela, entao baixar a 2 metade
+
+				//somar o tempTime com os tempos gastos com a replicação, ( tempo de download)
+				//Perguntar do par se o conteúdo a ser replicado eh menor que a janela deslizante
 
 				if (video == NULL || !peer->hasDownlink(peer, video, 0))
-				return;
+					return;
 
-	//		if (video == NULL )	return;
+				getIdObject(video, idVideo);
+				setReplicatedObject(video,1);
 
-			getIdObject(video, idVideo);
-			setReplicatedObject(video,1);
+				if(tempOccup < (availableWindowTime-replicateTime)){
 
-			if(tempOccup < (availableWindowTime-replicateTime)){
+					if (peer->isUp(peer)){
+						cloneVideo = cloneObject(video);
 
-			if (peer->isUp(peer)){
+						if ( peer->insertCache( peer, cloneVideo, systemData, lReplicate ) ){
 
-				if ( peer->insertCache( peer, cloneObject(video), systemData, lReplicate ) ){
+							item = createItemHashTable();
+							item->set(item, i, peer, idVideo, cloneVideo);
+							hashTable->insert(hashTable, item);
+							item->dispose(item);
 
-					item = createItemHashTable();
-					item->set(item, i, peer, idVideo, video);
-					hashTable->insert(hashTable, item);
-					item->dispose(item);
+							// updating hash table due to evicting that made room for the cached video
+							listEvicted = peer->getEvictedCache(peer);
+							hashTable->removeEvictedItens(hashTable, i, listEvicted);
+							char str[200];
+							sprintf(str, "REPLICATE %u %li %d %f \n",peer->getId(peer),getChunkNumber(cloneVideo),getRepresentationObject(cloneVideo), systemData->getTime(systemData));
+							community->logRecord(community,str);
+						}
 
-					// updating hash table due to evicting that made room for the cached video
-					listEvicted = peer->getEvictedCache(peer);
-					hashTable->removeEvictedItens(hashTable, i, listEvicted);
-					char str[200];
-					sprintf(str, "REPLICATE %u %li %d %f \n",peer->getId(peer),getChunkNumber(video),getRepresentationObject(video), systemData->getTime(systemData));
-					community->logRecord(community,str);
+
+					}
+
+
 				}
+				tempOccup+=getLengthObject(video);
+				occupDownTime+= player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));//calcular tempo de download
 
-
-			}
-
-			}
-			tempOccup+=getLengthObject(video);
-			//occupDownTime+= player->calcDownTime(peer,player,((float)getLengthBytesObject(video)));
-			occupDownTime+= window->getAverageDownTime(window);
-			//calcular tempo de download
 			}//while
 		}
+	}
 
-
-	//return status;
 }
 
 void *createMRWPolicy(void *entry){
@@ -150,9 +149,9 @@ void *createMRWPolicy(void *entry){
 	TMRWPolicy *policy = (TMRWPolicy *) malloc(sizeof( TMRWPolicy ) );
 	policy->RM = (TRMMRWPolicy *) malloc(sizeof( TRMMRWPolicy ) );
 	policy->data = NULL;
-    //TParameters *lp = createParameters(entry, PARAMETERS_SEPARATOR);
+	//TParameters *lp = createParameters(entry, PARAMETERS_SEPARATOR);
 
-   // lp->iterator(lp);
+	// lp->iterator(lp);
 
 	// init dynamics
 
@@ -214,7 +213,7 @@ static void runReplicate(TReplicate* replicate, void* hashTable, void* community
 	TGeneralRMPolicy *policy = data->policy;
 
 
-			policy->RM->replication(hashTable, community, systemData);
+	policy->RM->replication(hashTable, community, systemData);
 
 }
 
@@ -712,7 +711,7 @@ void RandomReplicate(THashTable* hashTable, TCommunity* community, TSystemInfo* 
 	}
 
 }
-*/
+ */
 
 
 
@@ -724,7 +723,7 @@ static void NoneReplicate(TPeer* peer, unsigned int idPeer, THashTable* hashTabl
 		return;
 
 }
-*/
+ */
 
 
 
@@ -811,7 +810,7 @@ void minimumWarrantyReplicate(THashTable* hashTable, TCommunity* community, TSys
 	}
 
 }
-*/
+ */
 
 
 //End Policy Replication
@@ -869,5 +868,5 @@ void *createReplicateNone(char *pars) {
 
 	return replicate;
 }
-*/
+ */
 

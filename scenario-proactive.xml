@@ -89,7 +89,7 @@
 		<fluctuation>
 			<policy>
 				<parameter name="dynamic">FLUCTUATION:FROMFILE</parameter>
-				<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/fluctuation.txt</parameter>
+				<parameter name="source">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/timeIntervalsForFluctuation.txt</parameter>
 			</policy>	
 		</fluctuation>
 		<replicate>
@@ -174,14 +174,14 @@
 					<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
 					<pick>
 						<parameter name="dynamic">RANDOM:CONSTANT</parameter>
-						<parameter name="value">50000</parameter>
+						<parameter name="value">6500</parameter>
 					</pick>
 				</join>
 				<leave>
 				<parameter name="dynamic">SESSIONLASTING:RANDOM</parameter>
 					<pick>
 						<parameter name="dynamic">RANDOM:CONSTANT</parameter>
-						<parameter name="value">0</parameter>
+						<parameter name="value">28800</parameter>
 					</pick>	
 				</leave>
 			</churn>

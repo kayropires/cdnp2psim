@@ -1077,14 +1077,14 @@ static void* searchingCommunity(TCommunity *community, void *vpeer, void *object
 
 }
 
-//fluctuationCommunity
-static void fluctuationCommunity(TCommunity *community){
+
+static float fluctuationCommunity(TCommunity *community){
 	TDataCommunity *data = community->data;
 	TPeer *peer;
+	short status =0;
+	//float nextIntervalFluctuation;
 
-/*	TFluctuation *fluctuation = data->tiers->tier[0].fluctuation;
 
-	fluctuation->updateFluctuation (fluctuation);*/
 
 	int sizeComm = community->getSize(community);
 	unsigned int i;
@@ -1093,11 +1093,17 @@ static void fluctuationCommunity(TCommunity *community){
 
 		peer = community->getPeer(community, i);
 		if (peer->isUp(peer)){
-			peer->updateTimeForFluctuation(peer);
+			peer->channelRatesFluctuation(peer);
 		}
 	}
+
+	TFluctuation *fluctuation = data->tiers->tier[0].fluctuation;
+	status = fluctuation->update (fluctuation);
+
+	return fluctuation->getCurrentIFT(fluctuation);
+
 }
-//
+
 
 static void replicationCommunity(THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
 	TDataCommunity *data = community->data;

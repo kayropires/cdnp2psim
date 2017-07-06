@@ -504,7 +504,7 @@ static void setChannelPeer(TPeer *peer, void *channel){
 }
 
 //Fluctuation
-static void updateTimeForFluctuationChannelPeer(TPeer *peer){
+static void updateRatesChannelPeer(TPeer *peer){
 
 	TChannel *channel=peer->getChannel(peer);
 	channel->updateRates(channel);
@@ -1076,7 +1076,7 @@ TPeer* createPeer(unsigned int id,  short tier, void *dynamicJoin, void *dynamic
     //Canal
     p->getChannel = getChannelPeer;
     p->setChannel = setChannelPeer;
-    p->updateTimeForFluctuation = updateTimeForFluctuationChannelPeer;
+    p->channelRatesFluctuation = updateRatesChannelPeer;
     p->canStream = canStreamPeer;
 
     p->setTier = setTierPeer;

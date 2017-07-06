@@ -299,7 +299,7 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 	THCache *hc;
 	TCache *cache;
 	TWindow *window=player->getWindow(player);
-	int i,levelInit,levelEnd,levelStorage,bigger=0;
+	int i,levelInit,levelEnd,levelReplicate,bigger=0;
 	long int lastPlaybackedObject;
 	TObject *storedObject=NULL, *auxObject,*aux2;
 	TListObject *listObject;
@@ -309,40 +309,43 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 	hc=peer->getHCache(peer);
 	levelInit=0;
 	levelEnd=hc->getLevels(hc);
-	levelStorage=hc->getLevelStorage(hc);
+	levelReplicate=hc->getLevelReplicate(hc);
 	lastPlaybackedObject = window->getLastPlaybackedObj(window);
 	dataSource = peer->getDataSource(peer);
 
 	i=levelInit;
 
 
-	if(lastPlaybackedObject <= (dataSource->getCollectionLength(dataSource)-1)){
+	if((lastPlaybackedObject <= (dataSource->getCollectionLength(dataSource)-1)) && ((lastPlaybackedObject+1) <= window->getLastAvailableChunk(window))){
 		auxObject = dataSource->pickFromAdaptive(dataSource,0,lastPlaybackedObject+1);
 		aux2 = auxObject;
 
 		while(i<levelEnd){
 
+			if( i != levelReplicate){
 
-			cache=hc->getCache(hc,i);
-			listObject = cache->getObjects(cache);
-			if(listObject!=NULL){
-				auxObject = listObject->getBiggerVersion(listObject, auxObject);//
-				if(auxObject!=NULL){
-					if(getLengthBytesObject(auxObject) > bigger){
-						bigger=getLengthBytesObject(auxObject);
-						storedObject=auxObject;
-						aux2=storedObject;
-						setFoundLevelObject(storedObject,i);
-					}
+				cache=hc->getCache(hc,i);
+				listObject = cache->getObjects(cache);
+				if(listObject!=NULL){
+					auxObject = listObject->getBiggerVersion(listObject, auxObject);//
+					if(auxObject!=NULL){
+						if(getLengthBytesObject(auxObject) > bigger){
+							bigger=getLengthBytesObject(auxObject);
+							storedObject=auxObject;
+							aux2=storedObject;
+							setFoundLevelObject(storedObject,i);
+						}
 
-				}else{
-					if(aux2!=NULL){
-						auxObject=aux2;
+					}else{
+						if(aux2!=NULL){
+							auxObject=aux2;
+						}
 					}
 				}
 			}
-
 			i++;
+
+
 		}
 	}
 
@@ -354,6 +357,11 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 		window->setLastPlaybackedObj(window,lastPlaybackedObject+1);
 		char str[200];
 		sprintf(str, "PLAYBACK %u %li %d %f \n",peer->getId(peer),getChunkNumber(storedObject), getRepresentationObject(storedObject), systemData->getTime(systemData));
+		community->logRecord(community,str);
+
+	}else{
+		char str[200];
+		sprintf(str, "PLAYBACK %u %li STALL %f \n",peer->getId(peer),window->getLastPlaybackedObj(window)+1, systemData->getTime(systemData));
 		community->logRecord(community,str);
 
 	}
