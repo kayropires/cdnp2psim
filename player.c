@@ -365,6 +365,7 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 		community->logRecord(community,str);
 
 	}else{
+		player->setStatusPlayer(player,STALL_PLAYER);
 		char str[200];
 		sprintf(str, "PLAYBACK %u %li STALL_INIT %f \n",peer->getId(peer),window->getLastPlaybackedObj(window)+1, systemData->getTime(systemData));
 		community->logRecord(community,str);

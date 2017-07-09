@@ -837,9 +837,11 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 				}
 
 
-			}else{
-				player->setStatusPlayer(player,STALL_PLAYER);
 			}
+
+			/*else{
+				player->setStatusPlayer(player,STALL_PLAYER);
+			}*/
 			/*}else{
 
 				timeEvent = clock + 2;
