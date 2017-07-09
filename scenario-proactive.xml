@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!-- <community tiers="2" size="1000"> -->
-<community tiers="1" size="7">
+<community tiers="1" size="100">
 <!-- Grupo de pares que acessam playlists, removido -->
 <!--	<tier size="200">
 		<search>
@@ -78,7 +78,7 @@
 	-->
 	<!-- Fim do grupo de pares que acessam playlists -->
 	
-	<tier size="7">	
+	<tier size="100">	
 		<search>	
 			<policy>
 				<parameter name="dynamic">SEARCH:NEIGHBORHOOD</parameter>

@@ -18,6 +18,7 @@ typedef float TOccupBufferWindow;
 
 typedef struct player TPlayer;
 typedef struct playback TPlayback;
+typedef enum statusPlayer {LEADOFF=0, STALL_PLAYER=1, PLAYING=2} TStatusPlayer;
 typedef struct chunk TChunk;
 typedef struct window TWindow;
 
@@ -41,6 +42,8 @@ typedef void (* TResetWindow)(TWindow *window);
 typedef void (* TBufferingPlayer)(unsigned int idPeer, void* hashTable, void* community, void* systemData);
 typedef void* (* TSchedulingPlayer)(void *peer, void *video, void *listPeer,void *picked);
 typedef float (* TPlaybackPlayer)(void *community, TPlayer *player,void *hashTable, void *peer, void *systemData);
+typedef void (* TSetStatusPlayer)(TPlayer *player,TStatusPlayer statusPlayer);
+typedef TStatusPlayer (* TGetStatusPlayer)(TPlayer *player);
 typedef short (* TStallPlayer)(TPlayer *player);
 typedef void (* TSetStorageWindow)(TWindow *window, void *storage);
 typedef short (* TSwapStoragePlayer)(TPlayer *player);
@@ -91,6 +94,8 @@ struct player{
 	TBufferingPlayer buffering; //1
 	TSchedulingPlayer scheluding; //1
 	TPlaybackPlayer playback; //1
+	TSetStatusPlayer setStatusPlayer;
+	TGetStatusPlayer getStatusPlayer;
 	TStallPlayer stall; //1//sugestao estatisticas
 	TSwapStoragePlayer swapStorage;
 	TGetWindow getWindow;

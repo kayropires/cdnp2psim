@@ -32,6 +32,8 @@ static void *schedulingWindow(TPeer *peer, void *video, void *listPeer,void **pi
 //static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData);
 static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData);
 static short stallPlayback(TPlayer *player);
+static void setStatusPlayer(TPlayer *player, TStatusPlayer statusPlayer);
+static TStatusPlayer getStatusPlayer(TPlayer *player);
 static void setStorageWindow(TWindow *window, short storage);
 static short swapStorageSwindow(TPlayer *player);
 static short getLevelStorageWindow(TWindow *window);
@@ -77,6 +79,7 @@ struct _data_player{
 	TListObject *buffer; // window objects
 	THCache *storage;
 	TWindow *window;
+	TStatusPlayer status;
 
 	void *policy;
 };
@@ -213,6 +216,8 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 	player->buffering = processBuffering;
 	player->scheluding = schedulingWindow;
 	player->playback = playbackWindow;
+	player->setStatusPlayer = setStatusPlayer;
+	player->getStatusPlayer = getStatusPlayer;
 	player->stall = stallPlayback;
 	player->swapStorage = swapStorageSwindow;
 	player->getWindow = getWindowPlayer;
@@ -361,7 +366,7 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 
 	}else{
 		char str[200];
-		sprintf(str, "PLAYBACK %u %li STALL %f \n",peer->getId(peer),window->getLastPlaybackedObj(window)+1, systemData->getTime(systemData));
+		sprintf(str, "PLAYBACK %u %li STALL_INIT %f \n",peer->getId(peer),window->getLastPlaybackedObj(window)+1, systemData->getTime(systemData));
 		community->logRecord(community,str);
 
 	}
@@ -375,6 +380,19 @@ static short stallPlayback(TPlayer *player){
 
 
 	return status;
+}
+
+
+static void setStatusPlayer(TPlayer *player, TStatusPlayer statusPlayer){
+	TDataPlayer *data = player->data;
+
+	data->status = statusPlayer;
+}
+
+static TStatusPlayer getStatusPlayer(TPlayer *player){
+	TDataPlayer *data = player->data;
+
+	return data->status;
 }
 
 static short swapStorageSwindow(TPlayer *player){

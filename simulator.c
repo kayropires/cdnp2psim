@@ -296,7 +296,7 @@ float processRequestSimulator(unsigned int idPeer, THashTable* hashTable, TCommu
 		}else{
 			auxIdServerPeer = 1000;
 		}
-		sprintf(str, "REQUEST %u %u %li %d %hi %f \n",peer->getId(peer),auxIdServerPeer,getChunkNumber(picked),getRepresentationObject(picked),isReplicatedObject(picked) , systemData->getTime(systemData));
+		sprintf(str, "REQUEST %u %u %li %d %d %hi %f \n",peer->getId(peer),auxIdServerPeer,getChunkNumber(picked),getRepresentationObject(picked),getLengthBytesObject(picked) ,isReplicatedObject(picked) , systemData->getTime(systemData));
 		community->logRecord(community,str);
 
 
@@ -748,9 +748,16 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 
 
-					timeEvent = clock+window->getDownTimeLastChunk(window);;
+					timeEvent = clock+window->getDownTimeLastChunk(window);
 					event  = createEvent((TTimeEvent) timeEvent, REQUEST, (TOwnerEvent)idPeer);
 					queue->enqueue(queue, timeEvent, event);
+
+					if(player->getStatusPlayer(player)==STALL_PLAYER){
+
+						timeEvent = clock+window->getDownTimeLastChunk(window);
+						event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
+						queue->enqueue(queue, timeEvent, event);
+					}
 					//}
 
 				}else{
@@ -821,19 +828,29 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 
 				/*			printf("Par: %u ,",peer->getId(peer));
 				printf("\tSegmento: %ld \n",window->getLastPlaybackedObj(window));*/
+				if(player->getStatusPlayer(player)==STALL_PLAYER){
+				player->setStatusPlayer(player,PLAYING);
+				char str[200];
+				sprintf(str, "PLAYBACK %u %li STALL_END %f \n",peer->getId(peer),window->getLastPlaybackedObj(window)+1, sysInfo->getTime(sysInfo));
+				community->logRecord(community,str);
+
+				}
 
 
 			}else{
+				player->setStatusPlayer(player,STALL_PLAYER);
+			}
+			/*}else{
 
 				timeEvent = clock + 2;
 				event  = createEvent((TTimeEvent) timeEvent, PLAYBACK, (TOwnerEvent)idPeer);
 				queue->enqueue(queue, timeEvent, event);
 
-				/*			printf("Par: %u ,",peer->getId(peer));
-				printf("\t STALL PLAYBACK \n");*/
+							printf("Par: %u ,",peer->getId(peer));
+				printf("\t STALL PLAYBACK \n");
 
 			}
-
+*/
 			if( window->getLastPlaybackedObj(window) == player->getCollectionLength(peer->getDataSource(peer))-1 ){
 
 
