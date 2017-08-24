@@ -437,7 +437,7 @@ void disposeHashTable(THashTable* hashTable){
 
 static unsigned long int redundancyDemandHashTable(THashTable *hashTable){
 	int i;
-	int levelInit=NULL,levelEnd=NULL;
+	int levelInit=0,levelEnd=3;
 	float stored;
 
 

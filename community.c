@@ -485,7 +485,7 @@ static void *createLogCommunity(){
 	if(fp == NULL)
 	{
 		printf("Error in creating the log file! community.c, function:setupLogCommunity \n");
-		sleep(3);
+		//sleep(3);
 		exit(1);
 	}
 
@@ -635,7 +635,7 @@ static short hasIntoCommunity(TCommunity* community, void *vObject, void *vHashT
 	THCache *hc;  //@
 	TObject *storedObject;
 	unsigned int id = -1;
-	int levelInit=NULL,levelEnd=NULL;
+	int levelInit=0,levelEnd=3;
 	//TListObject *listObject;
 	TDataCommunity *data = community->data;
 
@@ -1078,7 +1078,8 @@ static void* searchingCommunity(TCommunity *community, void *vpeer, void *object
 }
 
 
-static float fluctuationCommunity(TCommunity *community){
+static float fluctuationCommunity(TCommunity* community,float nextIntervalFluctuation, void* vsystemData){
+	TSystemInfo* systemData=vsystemData;
 	TDataCommunity *data = community->data;
 	TPeer *peer;
 	short status =0;
@@ -1094,6 +1095,12 @@ static float fluctuationCommunity(TCommunity *community){
 		peer = community->getPeer(community, i);
 		if (peer->isUp(peer)){
 			peer->channelRatesFluctuation(peer);
+			TChannel *channel = peer->getChannel(peer);
+			char str[200];
+			sprintf(str, "FLUCTUATION %u %0.1f %f %f %f \n", peer->getId(peer),nextIntervalFluctuation, channel->getDLRate(channel), channel->getULRate(channel), systemData->getTime(systemData));
+			community->logRecord(community,str);
+			//if(peer->getId(peer)==0)
+				//sleep(5);
 		}
 	}
 
@@ -1105,7 +1112,10 @@ static float fluctuationCommunity(TCommunity *community){
 }
 
 
-static void replicationCommunity(THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
+static void replicationCommunity(void* vhashTable, TCommunity* community, void* vsystemData){
+
+	THashTable* hashTable=vhashTable;
+	TSystemInfo* systemData=vsystemData;
 	TDataCommunity *data = community->data;
 	//TPeer *peer = vpeer;
 
@@ -1119,9 +1129,9 @@ static void replicationCommunity(THashTable* hashTable, TCommunity* community, T
 static void logRecordCommunity(TCommunity* community, char* str){
 	TDataCommunity *data = community->data;
 
-	//data->fpLogCommnunity = fopen("/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/logCommunity.txt","a+");
+
 	fprintf(data->fpLogCommnunity,"%s",str);
-	//fclose(data->fpLogCommnunity);
+
 
 }
 static void closeLogCommunity(TCommunity* community){
@@ -1152,7 +1162,7 @@ TCommunity* createCommunity(int simTime, char *scenarios){
 	TPeer *p;
 
 	TSymTable *symTable = createSymTable();
-
+	//printf("malloc 1 \n");
 	TCommunity* community = (TCommunity *)malloc(sizeof(TCommunity));
 	TDataCommunity *dataComm = malloc(sizeof(TDataCommunity));
 

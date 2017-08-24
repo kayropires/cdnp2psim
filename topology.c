@@ -772,6 +772,7 @@ void bootstrapTrySessionTopology( TTopology *topo, void *vCommunity ){
 
 		 //Aqui criterio da topologia Session
 		 int degreeSimilarity = (onlinePeer->runProfilePolicy(onlinePeer,profile));//@
+		// int degreeSimilarity = 3;
 		 pq->enqueue(pq,degreeSimilarity,onlinePeer);
 	 }
 
@@ -782,7 +783,7 @@ void bootstrapTrySessionTopology( TTopology *topo, void *vCommunity ){
 		 if (idSimilar != idOwner ){
 			 connManager->openConnection(connManager,idSimilar,similarPeer);
 		 }
-		 pq->dequeue(pq);
+		 pq->dequeue(pq);//necessario ?
 	 }
 
 	 pq->ufree(pq);

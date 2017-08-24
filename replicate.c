@@ -29,9 +29,6 @@
 #include "dictionary.h"
 
 
-//void runReplicate(TReplicate* replicate, THashTable* hashTable, TCommunity* community, TSystemInfo* systemData);
-
-
 
 // minimum Replication Warranty  Policy
 //RM Replication Manager
@@ -56,7 +53,8 @@ struct MRWPolicy{
 
 
 
-void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
+void runMinimumReplicationWarrantyPolicy(void* vHashTable, void* vCommunity, void* vSystemData){
+//void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
 	//short status = 0;
 	TObject* video, *cloneVideo;
 	TIdObject idVideo;
@@ -66,6 +64,9 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 	THCache *hc;
 	TDataSource* dataSource;
 	TItemHashTable *item;
+	THashTable* hashTable = vHashTable;
+	TSystemInfo* systemData = vSystemData;
+	TCommunity* community = vCommunity;
 	TPlayer *player;
 	TWindow *window;
 	//unsigned int idServerPeer;
@@ -98,19 +99,19 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 			availableWindowTime = window->getAvailability(window);
 			replicateTime = availableWindowTime * 0.5;
 
-			while(tempOccup < (availableWindowTime-replicateTime) && occupDownTime <= replicateTime){
+			while(tempOccup <= availableWindowTime && occupDownTime <= replicateTime){
 				video = dataSource->pickFromAdaptive(dataSource, version, lastAvailableChunk+=1); //escolher até Limite da metade da janela, entao baixar a 2 metade
 
 				//somar o tempTime com os tempos gastos com a replicação, ( tempo de download)
 				//Perguntar do par se o conteúdo a ser replicado eh menor que a janela deslizante
 
-				if (video == NULL || !peer->hasDownlink(peer, video, 0))
+				if (video == NULL)
 					return;
 
 				getIdObject(video, idVideo);
 				setReplicatedObject(video,1);
 
-				if(tempOccup < (availableWindowTime-replicateTime)){
+				if(tempOccup > (availableWindowTime-replicateTime)){
 
 					if (peer->isUp(peer)){
 						cloneVideo = cloneObject(video);
@@ -123,20 +124,20 @@ void runMinimumReplicationWarrantyPolicy(THashTable* hashTable, TCommunity* comm
 							item->dispose(item);
 
 							// updating hash table due to evicting that made room for the cached video
-							listEvicted = peer->getEvictedCache(peer);
+							listEvicted = peer->getEvictedCache(peer,lReplicate);
 							hashTable->removeEvictedItens(hashTable, i, listEvicted);
 							char str[200];
-							sprintf(str, "REPLICATE %u %li %d %f \n",peer->getId(peer),getChunkNumber(cloneVideo),getRepresentationObject(cloneVideo), systemData->getTime(systemData));
+							sprintf(str, "REPLICATE %u %li %d %d %f \n",peer->getId(peer),getChunkNumber(cloneVideo),getRepresentationObject(cloneVideo),getLengthBytesObject(cloneVideo), systemData->getTime(systemData));
 							community->logRecord(community,str);
 						}
 
 
 					}
 
-
+					occupDownTime+= player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));//calcular tempo de download
 				}
 				tempOccup+=getLengthObject(video);
-				occupDownTime+= player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));//calcular tempo de download
+
 
 			}//while
 		}
@@ -163,26 +164,393 @@ void *createMRWPolicy(void *entry){
 	return policy;
 }
 
-
-
-
-
 //
 
-float getBufferFractionReplicate(TReplicate *replicate){
+float getBufferFractionReplicate(void *vreplicate){
+	TReplicate *replicate=vreplicate;
 	TDATAMRWPolicy *data =replicate->data;
 
 	return data->bfraction ;
 }
+/* End MRWPolicy 	*/
+
+
+//replicationBasedNetworkStatePolicy
+
+
+//RM Replication Manager
+typedef struct RMRBNSPolicy TRMRBNSPolicy;
+struct RMRBNSPolicy{
+
+	TRMReplicationGeneralPolicy replication; // Object Management Policy run cache(MRW/Popularity)
+
+};
+
+
+typedef struct _data_RBNSPolicy TDATARBNSPolicy;
+struct _data_RBNSPolicy{
+	TBfractionRBNSPolicy bfraction;
+};
+
+typedef struct replicationBasedNetworkStatePolicy TRBNSPolicy;
+
+struct replicationBasedNetworkStatePolicy{
+
+TRMRBNSPolicy *RM;
+TDATARBNSPolicy *data;
+
+
+};
+
+void runReplicationBasedNetworkStatePolicy(void* vhashTable, void* vcommunity, void* vsystemData){
+
+	THashTable* hashTable=vhashTable;
+	TCommunity* community=vcommunity;
+	TSystemInfo* systemData=vsystemData;
+
+	//short status = 0;
+	TObject* video, *cloneVideo;
+	TIdObject idVideo;
+	TListObject *listEvicted;
+	//TPeer* serverPeer;
+	TPeer *peer;
+	THCache *hc;
+	TDataSource* dataSource;
+	TItemHashTable *item;
+	TPlayer *player;
+	TWindow *window;
+	//unsigned int idServerPeer;
+	//TChannel* channel;
+	//	float prefetchRate;
+	float upTime, downTime;
+	long int lastAvailableChunk;
+	int lReplicate, versionPicked; //Level Replicate
+	//int rProx;
+	//videoVersions=-1;
+	versionPicked=-1;
+	video=NULL;
+
+
+
+	int sizeComm = community->getSize(community); //obtem tamanho da comunidade
+	unsigned int i;
+	static int contRand;
+			if(contRand!=1){
+			contRand=1;
+			srand(time(NULL));
+			}
+	int num = rand() % 99;
+
+
+
+	for(i=0;i<(5);i++){
+
+		num = rand() % 99;
+		peer = community->getPeer(community, num);
+		player = peer->getPlayer(peer);
+		window = player->getWindow(player);
+		lastAvailableChunk = window->getLastAvailableChunk(window);
+		if ( ( peer->getBufferingStatus(peer) == 1)  && peer->isUp(peer) && lastAvailableChunk < 6100) {
+
+
+
+
+			float availableWindowTime = 0, tempOccup = 0, occupDownTime = 0,replicateTime ;
+			hc = peer->getHCache(peer);
+			lReplicate = hc->getLevelReplicate(hc);
+			dataSource = peer->getDataSource(peer);
+			availableWindowTime = window->getAvailability(window);
+			replicateTime = availableWindowTime * 0.5;
+
+			//window->getLastRepresentation(window);
+
+
+
+
+			//int candidateVersion;
+			while(tempOccup < availableWindowTime && occupDownTime <= replicateTime ){
+
+				versionPicked =-1;
+				//videoVersions = dataSource->getVersionsLength(dataSource);
+				//candidateVersion = videoVersions-1;
+
+				//while(versionPicked == -1 && candidateVersion > 0 ){
+
+				video = dataSource->pickFromAdaptive(dataSource,window->getLastRepresentation(window), lastAvailableChunk+=1);
+
+				upTime=player->calcUpTimeFromPeer(peer,player,((float)getLengthBytesObject(video)));
+				downTime=player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));
+				if(upTime <= ((window->getSize(window))-7) && (downTime <= availableWindowTime)){
+
+					versionPicked = getRepresentationObject(video);
+
+
+				}
+				//candidateVersion-=1;
+
+				//}//End While
+
+				/*else{
+
+									contcandidateVersion = videoVersions+1;
+								}*/
+
+				//candidateVersion++;
+				//}
+				//somar o tempTime com os tempos gastos com a replicação, ( tempo de download)
+				//Perguntar do par se o conteúdo a ser replicado eh menor que a janela deslizante
+
+				/*if (video == NULL)
+					return;*/
+				//
+
+				//
+
+
+				if(versionPicked != -1){
+					if(tempOccup > (availableWindowTime-replicateTime)){
+						getIdObject(video, idVideo);
+
+
+						if (peer->isUp(peer)){
+							setReplicatedObject(video,1);
+							cloneVideo = cloneObject(video);
+
+							if ( peer->insertCache( peer, cloneVideo, systemData, lReplicate ) ){
+
+								item = createItemHashTable();
+								item->set(item, num, peer, idVideo, cloneVideo);
+								hashTable->insert(hashTable, item);
+								item->dispose(item);
+
+								// updating hash table due to evicting that made room for the cached video
+								listEvicted = peer->getEvictedCache(peer,lReplicate);
+								hashTable->removeEvictedItens(hashTable, num, listEvicted);
+
+								char str[200];
+								sprintf(str, "REPLICATE %u %li %d %d %f \n",peer->getId(peer),getChunkNumber(cloneVideo),getRepresentationObject(cloneVideo),getLengthBytesObject(cloneVideo), systemData->getTime(systemData));
+								community->logRecord(community,str);
+							}
+
+
+						}
+
+						//occupDownTime+= player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));//calcular tempo de download
+						occupDownTime+=downTime;
+					}
+
+
+				}
+
+				tempOccup+=getLengthObject(video);
 
 
 
 
 
+			}//while
+		}
+	}
+
+}
+
+void *createReplicationBasedNetworkStatePolicy(void *entry){
+
+	TRBNSPolicy *policy = (TRBNSPolicy *) malloc(sizeof( TRBNSPolicy ) );
+	policy->RM = (TRMRBNSPolicy *) malloc(sizeof( TRMRBNSPolicy ) );
+	policy->data = NULL;
+
+	policy->RM->replication = runReplicationBasedNetworkStatePolicy;
+	return policy;
+}
 
 
-// REPLICATION Management
+//
 
+//replicationGreedyPolicy
+
+ //RM Replication Manager
+typedef struct RMRGreedyPolicy TRMRGreedyPolicy;
+struct RMRGreedyPolicy{
+
+	TRMReplicationGeneralPolicy replication; // Object Management Policy run cache(MRW/Popularity)
+
+};
+
+
+typedef struct _data_RGreedyPolicy TDATARGreedyPolicy;
+struct _data_RGreedyPolicy{
+	TBfractionRGreedyPolicy bfraction;
+};
+
+typedef struct replicationGreedyPolicy TRGreedyPolicy;
+
+struct replicationGreedyPolicy{
+
+TRMRGreedyPolicy *RM;
+TDATARGreedyPolicy *data;
+
+
+};
+
+void runReplicationGreedyPolicy(void* vhashTable, void* vcommunity, void* vsystemData){
+
+	THashTable* hashTable=vhashTable;
+	TCommunity* community=vcommunity;
+	TSystemInfo* systemData=vsystemData;
+	//short status = 0;
+	TObject* video, *cloneVideo;
+	TIdObject idVideo;
+	TListObject *listEvicted;
+	//TPeer* serverPeer;
+	TPeer *peer;
+	THCache *hc;
+	TDataSource* dataSource;
+	TItemHashTable *item;
+	TPlayer *player;
+	TWindow *window;
+	//unsigned int idServerPeer;
+	//TChannel* channel;
+	//	float prefetchRate;
+	float upTime, downTime;
+	long int lastAvailableChunk;
+	int videoVersions,lReplicate, versionPicked; //Level Replicate
+	//int rProx;
+	videoVersions=-1;
+	versionPicked=-1;
+	video=NULL;
+
+
+
+	int sizeComm = community->getSize(community); //obtem tamanho da comunidade
+	unsigned int i;
+
+	//printf("Replicacao com garantia minima \n");
+
+	for(i=0;i<(sizeComm-95);i++){
+
+		peer = community->getPeer(community, i);
+		player = peer->getPlayer(peer);
+		window = player->getWindow(player);
+		lastAvailableChunk = window->getLastAvailableChunk(window);
+		if ( ( peer->getBufferingStatus(peer) == 1)  && peer->isUp(peer) && lastAvailableChunk < 6100) {
+
+
+
+
+			float availableWindowTime = 0, tempOccup = 0, occupDownTime = 0,replicateTime ;
+			hc = peer->getHCache(peer);
+			lReplicate = hc->getLevelReplicate(hc);
+			dataSource = peer->getDataSource(peer);
+			availableWindowTime = window->getAvailability(window);
+			replicateTime = availableWindowTime * 0.5;
+
+
+
+
+			int candidateVersion;
+			while(tempOccup < availableWindowTime && occupDownTime <= replicateTime ){
+
+				versionPicked =-1;
+				videoVersions = dataSource->getVersionsLength(dataSource);
+				candidateVersion = videoVersions-1;
+
+				while(versionPicked == -1 && candidateVersion > 0 ){
+
+				video = dataSource->pickFromAdaptive(dataSource,candidateVersion, lastAvailableChunk+=1);
+
+				upTime=player->calcUpTimeFromPeer(peer,player,((float)getLengthBytesObject(video)));
+				downTime=player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));
+				if(upTime <= ((window->getSize(window))-7) && (downTime <= availableWindowTime)){
+
+					versionPicked = getRepresentationObject(video);
+
+
+				}
+				candidateVersion-=1;
+				}
+				/*else{
+
+									contcandidateVersion = videoVersions+1;
+								}*/
+
+				//candidateVersion++;
+				//}
+				//somar o tempTime com os tempos gastos com a replicação, ( tempo de download)
+				//Perguntar do par se o conteúdo a ser replicado eh menor que a janela deslizante
+
+				/*if (video == NULL)
+					return;*/
+				//
+
+				//
+
+
+				if(versionPicked != -1){
+					if(tempOccup > (availableWindowTime-replicateTime)){
+						getIdObject(video, idVideo);
+
+
+						if (peer->isUp(peer)){
+							setReplicatedObject(video,1);
+							cloneVideo = cloneObject(video);
+
+							if ( peer->insertCache( peer, cloneVideo, systemData, lReplicate ) ){
+
+								item = createItemHashTable();
+								item->set(item, i, peer, idVideo, cloneVideo);
+								hashTable->insert(hashTable, item);
+								item->dispose(item);
+
+								// updating hash table due to evicting that made room for the cached video
+								listEvicted = peer->getEvictedCache(peer,lReplicate);
+								hashTable->removeEvictedItens(hashTable, i, listEvicted);
+
+								char str[200];
+								sprintf(str, "REPLICATE %u %li %d %d %f \n",peer->getId(peer),getChunkNumber(cloneVideo),getRepresentationObject(cloneVideo),getLengthBytesObject(cloneVideo), systemData->getTime(systemData));
+								community->logRecord(community,str);
+							}
+
+
+						}
+
+						//occupDownTime+= player->calcDownTimeFromServer(peer,player,((float)getLengthBytesObject(video)));//calcular tempo de download
+						occupDownTime+=downTime;
+					}
+					//tempOccup+=getLengthObject(video);
+
+				}
+
+				tempOccup+=getLengthObject(video);
+
+				/*else{
+					tempOccup+=getLengthObject(video);
+				}*/
+
+			}//while
+		}
+	}
+
+}
+
+void *createReplicationGreedyPolicy(void *entry){
+
+
+	TRGreedyPolicy *policy = (TRGreedyPolicy *) malloc(sizeof( TRGreedyPolicy ) );
+
+	policy->RM = (TRMRGreedyPolicy *) malloc(sizeof( TRMRGreedyPolicy ) );
+	policy->data = NULL;
+
+	policy->RM->replication = runReplicationGreedyPolicy;
+	return policy;
+
+
+}
+//
+
+
+
+/*		 REPLICATION Management		 */
 
 typedef struct _data_replication{
 

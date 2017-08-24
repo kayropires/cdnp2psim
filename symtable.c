@@ -306,6 +306,19 @@ static void* initReplicateSymTable(TDictionary *d){
 	d->insert(d,key,sym);*/
 
 	sym = malloc(sizeof(TDataCreateSymTable));
+	key = d->keyGenesis("REPLICATE:BASEDNETWORKSTATE");
+	sym->create = (TCreateSymTable)createReplicationBasedNetworkStatePolicy;
+	sprintf(sym->pars,"bfraction;");
+	d->insert(d,key,sym);
+
+	sym = malloc(sizeof(TDataCreateSymTable));
+	key = d->keyGenesis("REPLICATE:GREEDY");
+	sym->create = (TCreateSymTable)createReplicationGreedyPolicy;
+	sprintf(sym->pars,"bfraction;");
+	d->insert(d,key,sym);
+
+
+	sym = malloc(sizeof(TDataCreateSymTable));
 	key = d->keyGenesis("REPLICATE:MINIMUMWARRANTY");
 	sym->create = (TCreateSymTable)createMRWPolicy;
 	sprintf(sym->pars,"bfraction;");
@@ -325,7 +338,8 @@ static void* initLMPolicySymTable(TDictionary *d){
 
 	sym = malloc(sizeof(TDataCreateSymTable));
 	key = d->keyGenesis("THROUGHPUT:FROMFILE");
-	sym->create = (TCreateSymTable)createFROMFILEPolicy;
+	//sym->create = (TCreateSymTable)createRatesFROMFILEPolicy;
+	sym->create = (TCreateSymTable)createSingletonRatesFromFilePolicy;
 	sprintf(sym->pars,"limsup;source");
 	d->insert(d,key,sym);
 

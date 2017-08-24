@@ -9,6 +9,7 @@
 #include "dictionary.h"
 #include "internals.h"
 #include "channel.h"
+#include <time.h>
 
 
 //static void setAverageThroughputLink(TLink *link, float lastRate, float newRate);
@@ -73,6 +74,7 @@ typedef struct _data_link{
 	int lmRates;
 	void *throughputPolicy;
 	float currentRate;
+	long int fpPosition;
 	float averageThroughput;
 
 } TDataLink;
@@ -172,7 +174,7 @@ static void updateRatesLinks(TChannel *channel){
 		//newRate = lastRate - nextRate;
 		data->rate_uplink = nextRate;
 	}*/
-	data->rate_uplink = nextRate;
+	data->rate_uplink = nextRate*2;
 
 	//update downLink
 	lastRate = downLink->getCurrentRate(downLink) ;
@@ -187,7 +189,7 @@ static void updateRatesLinks(TChannel *channel){
 		data->rate_downlink =nextRate;
 
 	}*/
-	data->rate_downlink = nextRate;
+	data->rate_downlink = nextRate*2;
 
 }
 
@@ -250,29 +252,29 @@ static short openULDataChannel(TChannel *channel, int idPeerSrc, int idPeerDst, 
 
 static short openDLDataChannel(TChannel *channel, int idPeerSrc, int idPeerDst, float eb){
 	TDataChannel *data = channel->data;
-	TLink *downLink = channel->getDownLink(channel);
-	float currentRate = downLink->getCurrentRate(downLink);
+		TLink *downLink = channel->getDownLink(channel);
+		float currentRate = downLink->getCurrentRate(downLink);
 
-	short opened=0; // status of requested data channel
-
-
-	//if(data->rate_downlink <= currentRate){
-
-		if( (data->rate_downlink>= eb) ){
-			TOngoingDataChannel *ongoingDC = createOngoingDataChannel(eb, idPeerSrc, idPeerDst);
-			data->ongoingDL->insert(data->ongoingDL, idPeerDst, ongoingDC);
-			data->rate_downlink -= eb;
-			opened = 1; // true
-		}else{
-			printf("Failed to open DL channel!\n");
-			printf("eb: %f, rate_downlink: %f\n", eb, data->rate_downlink);
-			fflush(stdout);
-		}
-
-	//}
+		short opened=0; // status of requested data channel
 
 
-	return opened;
+		//if(data->rate_downlink <= currentRate){
+
+			if( (data->rate_downlink>= eb) ){
+				TOngoingDataChannel *ongoingDC = createOngoingDataChannel(eb, idPeerSrc, idPeerDst);
+				data->ongoingDL->insert(data->ongoingDL, idPeerDst, ongoingDC);
+				data->rate_downlink -= eb;
+				opened = 1; // true
+			}else{
+				printf("Failed to open DL channel!\n");
+				printf("eb: %f, rate_downlink: %f\n", eb, data->rate_downlink);
+				fflush(stdout);
+			}
+
+		//}
+
+
+		return opened;
 }
 
 
@@ -307,10 +309,18 @@ static TDataLink *initDataLink(float maxRate, TGeneralLinkPolicy *policy){
 	data->maxRate = maxRate;
 	data->throughputPolicy = policy;
 	data->currentRate = maxRate;
+	data->fpPosition = 0;
 	data->averageThroughput = 0.0;
 
 	return data;
 }
+static  void initPosition(TLink *link, TGeneralLinkPolicy *policy){
+
+	TDataLink *data = link->data;
+	data->fpPosition = policy->LM->getPositionFromFile(link);
+
+}
+
 TLink *createDataLink(float maxRate, void *policy){
 
 	TLink *link = malloc(sizeof(TLink));
@@ -322,6 +332,7 @@ TLink *createDataLink(float maxRate, void *policy){
 	link->getlmRates = getLmRateLink;
 	link->getAverageThroughput = getAverageThroughputLink;
 	//link->setAverageThroughput = setAverageThroughputLink;
+	initPosition(link,policy);
 
 	return link;
 }
@@ -416,6 +427,7 @@ struct LMFROMFILEPolicy{
 
 	TLMUpdateGeneralPolicy Update; //
 	TLMGetLmRatesGeneralPolicy getLmRates;
+	TLMGetPositionFromFileGeneralPolicy getPositionFromFile;
 	TLMGetNextRateGeneralPolicy getNextRate;
 	TLMSetAverageThroughputGeneralPolicy setAverageThroughput;
 
@@ -423,6 +435,7 @@ struct LMFROMFILEPolicy{
 
 struct _data_FROMFILEPolicy{
 	TlmLinkRatesFROMFILEPolicy lmRates;
+	long int positionRatesFromFile;
 	TFpRatesFROMFILEPolicy *fpRates;
 };
 //#
@@ -431,7 +444,61 @@ struct FROMFILEPolicy{
 	TDATAFROMFILEPolicy *data;
 };
 
-void *createFROMFILEPolicy(void *entry){
+void setPositionRatesFromFile(TFROMFILEPolicy *policy){
+
+		int line=0;
+		static int contRand=0;
+		if(contRand!=1){
+		contRand=1;
+		srand(time(NULL));
+		}
+		int num = rand() % 10801;
+		float nextRate=0;
+
+		FILE *fp=policy->data->fpRates;
+
+		long int position;
+
+		fseek(fp, 0L, SEEK_SET);
+
+				while (line<=num)
+					{
+
+					fscanf(fp,"%f",&nextRate);
+					line++;
+					}
+		position=ftell(fp);
+
+		policy->data->positionRatesFromFile = position;
+
+}
+
+void *createSingletonRatesFromFilePolicy(void *entry){
+
+	static TDictionary *d=NULL;
+
+		TFROMFILEPolicy *p=NULL;
+		TKeyDictionary key;
+
+		if (!d)
+			d = createDictionary();
+
+		key = d->keyGenesis(entry);
+		if (d->has(d,key)){
+			p = d->retrieval(d,key);
+			setPositionRatesFromFile(p);
+		}else{
+			p = createRatesFROMFILEPolicy(entry);
+			setPositionRatesFromFile(p);
+			d->insert(d,key,p);
+		}
+
+	    return p;
+
+
+}
+
+void *createRatesFROMFILEPolicy(void *entry){
 
 	TFROMFILEPolicy *policy = (TFROMFILEPolicy *) malloc(sizeof( TFROMFILEPolicy ) );
 	policy->LM = (TLMFROMFILEPolicy *) malloc(sizeof( TLMFROMFILEPolicy ) );
@@ -440,6 +507,8 @@ void *createFROMFILEPolicy(void *entry){
 
 	policy->LM->Update = updateFROMFILEPolicy; // Object Management Policy Update LINK
 	policy->LM->getLmRates = getLmRatesFROMFILEPolicy;
+
+	policy->LM->getPositionFromFile = getPositionRatesFronFilePolicy;
 	policy->LM->getNextRate = getNextRateFROMFILEPolicy;
 	policy->LM->setAverageThroughput = setAverageThroughputFROMFILEPolicy;
 
@@ -497,6 +566,16 @@ int getLmRatesFROMFILEPolicy(TLink *link){
 
 	return lmRates;
 }
+long int getPositionRatesFronFilePolicy(TLink *link){
+	long int position;
+	TDataLink *data = link->data;
+	TFROMFILEPolicy *policy = data->throughputPolicy;
+
+	position = policy->data->positionRatesFromFile;
+
+	return position;
+}
+
 
 ///# NEXT RATE FROMFILE POLICY
 float getNextRateFROMFILEPolicy(TLink *link){
@@ -505,15 +584,90 @@ float getNextRateFROMFILEPolicy(TLink *link){
 	TFROMFILEPolicy *policy = data->throughputPolicy;
 	FILE *fp=policy->data->fpRates;
 
+
+
+	//int num = rand() % 10801;
+
+	//num-=1;
+	//int num2 = sizeof(double);
+	//fseek(fp, num*num2, SEEK_SET);
+
+	//fpos_t position;
+	//fgetpos (fp, &position);
+
+	 //fputs ("That is a sample",fp);
+	 //fsetpos (fp, &position);
+	 //fputs ("This",fp);
+/*
+	  pFile = fopen ("myfile.txt","w");
+
+	  fputs ("That is a sample",pFile);
+	  fsetpos (pFile, &position);
+	  fputs ("This",pFile);
+	  */
+
+/*	  Set the file position indicator in front of third f-p value.
+	    if (fseek(fp,sizeof(float)*num,SEEK_SET) != 0)
+	    {
+	       if (ferror(fp))
+	       {
+	          perror("fseek()");
+	          fprintf(stderr,"fseek() failed in file %s at line # %d\n", __FILE__,__LINE__-5);
+	          exit(EXIT_FAILURE);
+	       }
+	    }*/
+
+/*	fseek(fp, 0L, SEEK_SET);
+	fseek(fp, 2*sizeof(float), SEEK_SET);
+
+	fscanf(fp,"%f",&nextRate);
+	fgetpos (fp, &position);
+	fputs ("That is a sample",fp);
+	fputs ("That is a sample",fp);*/
+
+
+/*
 	if( !feof(fp) ){
-		//fscanf(fp,"%f",&nextRate);
+
+		if (fscanf(fp,"%f",&nextRate) != 1)
+			{
+
+			fseek(fp, 0L, SEEK_SET);
+			fscanf(fp,"%f",&nextRate);
+			}
+		}else{
+
+			fseek(fp, (long int)(8*num), SEEK_SET);
+			fscanf(fp,"%f",&nextRate);
+		}
+*/
+
+	//fseek(fp, 0L, SEEK_SET);
+	fseek(fp, data->fpPosition, SEEK_SET);
+
+	if (fscanf(fp,"%f",&nextRate) != 1)
+				{
+				fseek(fp, 0L, SEEK_SET);
+				fscanf(fp,"%f",&nextRate);
+				data->fpPosition=ftell(fp);
+				}else{
+					data->fpPosition=ftell(fp);
+				}
+
+	/*if( !feof(fp) ){
+
 		if (fscanf(fp,"%f",&nextRate) != 1)
 			{
 			fseek(fp, 0L, SEEK_SET);
 			fscanf(fp,"%f",&nextRate);
+			}else{
+				data->fpPosition=ftell(fp);
 			}
-	}
+	}else{
+		fseek(fp, 0L, SEEK_SET);
+		fscanf(fp,"%f",&nextRate);
 
+	}*/
 
 	float maxRate = data->maxRate;
 
@@ -653,6 +807,27 @@ struct FLUCTUATIONFROMFILEPolicy{
 	TDATAFLUCTUATIONFROMFILEPolicy *data;
 
 };
+
+//
+void *createSingletonFluctuationFROMFILEPolicy(void *entry){
+	static TDictionary *d=NULL;
+
+	TFLUCTUATIONFROMFILEPolicy *p=NULL;
+	TKeyDictionary key;
+	if (!d)
+		d = createDictionary();
+
+	key = d->keyGenesis(entry);
+	if (d->has(d,key)){
+		p = d->retrieval(d,key);
+	}else{
+		p = createFluctuationFROMFILEPolicy(entry);
+		d->insert(d,key,p);
+	}
+
+    return p;
+}
+//
 
 void *createFluctuationFROMFILEPolicy(void *entry){
 

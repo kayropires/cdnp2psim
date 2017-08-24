@@ -7,6 +7,7 @@ typedef TPickedRandomic (* TPickRandomic)(TRandomic *randomic);
 typedef TPickedRandomic (* TPickAdaptiveRandomic)(TRandomic *randomic, int version, long int segment);
 typedef TPickedRandomic (* TLastRandomic)(TRandomic *randomic);
 typedef void (* TResetRandomic)(TRandomic *randomic, char *);
+
 typedef void (* TDisposeRandomic)(TRandomic *randomic);
 
 struct randomic{

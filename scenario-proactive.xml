@@ -94,7 +94,7 @@
 		</fluctuation>
 		<replicate>
 		    <policy>
-				<parameter name="dynamic">REPLICATE:MINIMUMWARRANTY</parameter>
+				<parameter name="dynamic">REPLICATE:BASEDNETWORKSTATE</parameter>
 				<parameter name="bfraction">0.5</parameter>
 			</policy>
 		</replicate>
@@ -133,7 +133,7 @@
 					<parameter name="bufferMin">2</parameter>
 					<parameter name="bufferLow">8</parameter>
 					<parameter name="bufferMax">10</parameter>
-					<parameter name="representationMax">7</parameter>
+					<parameter name="representationMax">4</parameter>
 				</policy>
 			</player>
 			
@@ -142,18 +142,18 @@
 				<!-- parameter name="alpha"></parameter -->
 			</profile>
 			<topology>
-				<parameter name="maxConnections">30</parameter>
+				<parameter name="maxConnections">99</parameter>
 				<parameter name="maxAttempts">10</parameter>
 				<manager>
-					<parameter name="dynamic">TOPOLOGY:RANDOM</parameter>
+					<parameter name="dynamic">TOPOLOGY:SESSION</parameter>
 				</manager>
 			</topology>
 			<!-- Canal -->
 			<channel>	
-				<parameter name="capacity">768</parameter>
+				<parameter name="capacity">12862.21114</parameter>
 
 				<uplink>
-					<parameter name="rateUplink">256</parameter>
+					<parameter name="rateUplink">6431.105570</parameter>
 					<throughput>
 						<parameter name="dynamic">THROUGHPUT:FROMFILE</parameter>
 						<parameter name="limsup">5</parameter>
@@ -161,7 +161,7 @@
 					</throughput>
 				</uplink>
 				<downlink>
-					<parameter name="rateDownlink">512</parameter>
+					<parameter name="rateDownlink">6431.105570</parameter>
 					<throughput>
 						<parameter name="dynamic">THROUGHPUT:FROMFILE</parameter>
 						<parameter name="limsup">5</parameter>
@@ -205,8 +205,8 @@
 					<catalog>
 						<parameter name="dynamic">DATACATALOG:FROMCOLLECTIONSINGLETONADAPTIVE</parameter>
 						<parameter name="collection">/home/kratos/eclipse/workspace/cdnp2psim/Dados_Simulacao_ColecaoEntretenimento/ColecaoYoutube_Entretenimento.txt</parameter>
-						<parameter name="length">42931</parameter>
-						<parameter name="versionsLength">7</parameter>
+						<parameter name="length">24532</parameter>
+						<parameter name="versionsLength">4</parameter>
 						
 					</catalog>
 				</datasource>

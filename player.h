@@ -40,27 +40,35 @@ typedef void (* TSetDownTimeLastChunk)(TWindow *window, float downTime);
 typedef void (* TResetWindow)(TWindow *window);
 
 typedef void (* TBufferingPlayer)(unsigned int idPeer, void* hashTable, void* community, void* systemData);
-typedef void* (* TSchedulingPlayer)(void *peer, void *video, void *listPeer,void *picked);
+typedef void* (* TSchedulingPlayer)(void *peer, void *video, void *listPeer,void **picked);
 typedef float (* TPlaybackPlayer)(void *community, TPlayer *player,void *hashTable, void *peer, void *systemData);
 typedef void (* TSetStatusPlayer)(TPlayer *player,TStatusPlayer statusPlayer);
 typedef TStatusPlayer (* TGetStatusPlayer)(TPlayer *player);
 typedef short (* TStallPlayer)(TPlayer *player);
-typedef void (* TSetStorageWindow)(TWindow *window, void *storage);
+typedef void (* TSetStorageWindow)(TWindow *window, short storage);
 typedef short (* TSwapStoragePlayer)(TPlayer *player);
 
 //typedef short (* TIsFitInWindow)(TPlayer *player, void *object);
-typedef void* (* TSchedulingWindow)(void *peer, void *video, void *listPeer,void *picked);
+typedef void* (* TSchedulingWindow)(void *peer, void *video, void *listPeer,void **picked);
 
-typedef short (* THasWindow)(TPlayer *player, void *object);
+typedef short (* THasWindow)(TWindow *window, void *object);
 typedef short (* TDisposeWindow)(TPlayer* player);
-typedef void (* TShowWindow)(TPlayer* player);
+typedef void (* TShowWindow)(TWindow *window);
 typedef short (* TGetLevelStorageWindow)(TWindow* window);
 typedef TAvailabilityWindow (* TGetAvailabilityWindow)(TWindow* window);
 typedef TSizeWindow (* TGetSizeWindow)(TWindow* window);
 typedef TWindow *(* TGetWindow)(TPlayer* player);
 //typedef float (* TCalcDownTimeChunk)(void *peer, TPlayer *player, float lenghtObject);
-typedef float (* TCalcDownTimeChunk)(void *peer, TPlayer *player, float lengthBytes, void *serverPeer);
+typedef float (* TCalcDownTimeChunkFromServerPeer)(void *peer, TPlayer *player, float lengthBytes, void *serverPeer);
 typedef float (* TCalcDownTimeFromServer)(void *peer, TPlayer *player, float lengthBytes);
+typedef float (* TCalcUpTimeFromPeer)(void *peer, TPlayer *player, float lengthBytes);
+
+typedef float (* TCalcDownTimeAverageThroughputFromServer)(void *peer, TPlayer *player, float lengthBytes);
+typedef float (* TCalcUpTimeAverageThroughputFromPeer)(void *peer, TPlayer *player, float lengthBytes);
+
+
+
+
 
 
 
@@ -82,8 +90,8 @@ typedef float (* TGetAverageDownTime)(TWindow *window);
 
 typedef float (* TGetPlaybackedTime)(TWindow *window);
 typedef float (* TGetRemainingPlayingTime)(TWindow *window);
-
-typedef unsigned int (* TGetNumberOfStoredObjectWindow)(TPlayer* player);
+typedef unsigned int (* TGetNumberOfStoredObjectWindow)(TWindow *window);
+typedef void *(* TGetPolicy)(TWindow *window);
 
 struct player{
 	//private data
@@ -99,8 +107,11 @@ struct player{
 	TStallPlayer stall; //1//sugestao estatisticas
 	TSwapStoragePlayer swapStorage;
 	TGetWindow getWindow;
-	TCalcDownTimeChunk	calcDownTime;
+	TCalcDownTimeChunkFromServerPeer calcDownTimeFromPeer;
 	TCalcDownTimeFromServer calcDownTimeFromServer;
+	TCalcUpTimeFromPeer calcUpTimeFromPeer;
+	TCalcDownTimeAverageThroughputFromServer calcDownTimeAverageThroughputFromServer;
+	TCalcUpTimeAverageThroughputFromPeer calcUpTimeAverageThroughputFromPeer;
 	TGetCollectionLength getCollectionLength;
 
 
@@ -131,6 +142,7 @@ struct window{
 	TGetPlaybackedTime getPlaybackedTime;
 	TGetRemainingPlayingTime getRemainingPlayingTime;
 	TGetNumberOfStoredObjectWindow getNumberOfStoredObject;
+	TGetPolicy getPolicy;
 	TSetStorageWindow setStorage;
 	TSetOccupancyWindow setOccupancy;
 	TSetOccupBufferWindow setOccupBuffer;
@@ -165,7 +177,7 @@ typedef struct GeneralPolicySwm TGeneralPolicySwm;
 typedef struct SWMGeneralPolicy TSWMGeneralPolicy;
 
 struct SWMGeneralPolicy{
-	TSWMReplaceGeneralPolicy Replace; // Object Management Policy Replacement(LRU/Popularity)
+	TSWMReplaceGeneralPolicy schedule; // Object Management Policy Replacement(LRU/Popularity)
 	TSWMUpdateGeneralPolicy Update; // Object Management Policy Update cache(LRU/Popularity)
 	TSWMisFitInSwindowGeneralPolicy FitsInSwindow; // Eligibility criteria
 

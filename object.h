@@ -54,6 +54,7 @@ void setRatingObject(TObject *object, float rating);
 void setUploadObject(TObject * object, char* upload);
 void setBitRateObject(TObject *object, float bitRate);
 void setReplicatedObject(TObject *video,short replicado);
+void setFoundLevelObject(TObject *object, int level);
 
 void addStoredObject(TObject *object, int quantum);
 void addNormalizedByteServedObject(TObject *object, int quantum);

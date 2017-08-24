@@ -80,7 +80,7 @@ static int firstkDurationPlaylist(TPlaylist *pl, int k) {
 	}
 	return duration;
 }
-static int lengthPlaylist(TPlaylist *pl) {
+static float lengthPlaylist(TPlaylist *pl) {
 	struct _data_playlist*data = pl->data;
 	return data->length;
 }
@@ -355,6 +355,14 @@ long int getCollectionLengthDataSource(TDataSource *dataSource) {
 	return data->size/data->versionsLength;
 }
 
+int getVersionsLengthDataSource(TDataSource *dataSource) {
+	TDataCatalog *dataCatalog = dataSource->datacatalog;
+	TFromCollectionDataCatalog *data = dataCatalog->data;
+
+	return data->versionsLength;
+}
+
+
 TSetList **initFromPlayListDataCatalog(char *playLists, unsigned int length,
 		char *catalog) {
 	TDictionary *d = createDictionary();
@@ -367,8 +375,8 @@ TSetList **initFromPlayListDataCatalog(char *playLists, unsigned int length,
 	TKeyDictionary key;
 	char idVideo[400];
 	char xuploaded[26];
-	int bitRate,views,version, chunkNumber, min, stars, sec, ms, lengthBytes;
-	float ratings,duration;
+	int bitRate=0,views,version=-1, chunkNumber=-1, min, stars, sec, ms, lengthBytes;
+	float duration;
 	char line[6000];
 	char *lineptr;
 
@@ -630,6 +638,7 @@ void *pickFromAdaptiveDatasource(TDataSource *dataSource, int version, long int 
 
 	if ((i < 0) || (i >= data->size)) {
 		printf("PANIC: Error on pick UP procedure %u\n", i);
+		printf("datasource.c, #637 \n");
 		exit(0);
 	}
 
@@ -857,6 +866,7 @@ void* createFromCollectionDataSource(TDataCatalog *dataCatalog) {//@05_01_17_Cri
 	dataSource->duration = durationFromCollectionDataSource;//@ Criar tamanho em Bytes da colecao ?
 	dataSource->firstkduration = firstkDurationFromCollectionDataSource;
 	dataSource->getCollectionLength = getCollectionLengthDataSource;
+	dataSource->getVersionsLength = getVersionsLengthDataSource;
 	//buffering
 
 	return dataSource;
@@ -905,7 +915,8 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 	char idVideo[400];
 	//char xuploaded[26];
 	//xuploaded[0] = '\0';
-	int bitRate,version,chunkNumber, lengthBytes;//@_05/10
+	int bitRate,version,chunkNumber,lengthBytes;//@_05/10
+
 	float length, min, sec, ms;
 	//int stars;
 	//float ratings;
@@ -961,7 +972,7 @@ static TFromCollectionDataCatalog *initFromCollectionAdaptiveDataCatalog(char *f
 		fprintf(stderr,
 				"ERROR:datasource.c::loadCatalogFromFile: CATALOG SOURCE HAS LESS OBJECTS THAN REQUESTED\n");
 		fprintf(stderr,
-				"ERROR:datasource.c::loadCatalogFromFile: THE CATALOG SIZE IS %d\n",i);
+				"ERROR:datasource.c::loadCatalogFromFile: THE CATALOG SIZE IS %ld\n",i);
 		exit(0);
 	}
 

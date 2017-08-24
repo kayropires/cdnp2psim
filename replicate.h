@@ -7,7 +7,7 @@
 #ifndef REPLICATE_H_
 #define REPLICATE_H_
 
-
+float getBufferFractionReplicate(void *replicate);
 /*
 //Policy Replicate
 void *createReplicateRandom(char *pars);
@@ -114,6 +114,7 @@ typedef struct replicate TReplicate;
 //Replicate Related functions
 //
 TReplicate *createReplicate(void *policy );
+TReplicate *createDataReplicate(float bfraction, void *policy);
 
 
 typedef void (* TRunReplicate)(TReplicate* replicate, void* hashTable, void* community, void* systemData);
@@ -176,6 +177,18 @@ void *createMRWPolicy(void *entry);
 //void runMinimumReplicationWarrantyPolicy(void* hashTable, void* community, void* systemData);
 
 
+
+typedef struct replicationBasedNetworkStatePolicy TRBNSPolicy;
+typedef float TBfractionRBNSPolicy;
+
+void *createReplicationBasedNetworkStatePolicy(void *entry);
+
+//
+typedef struct replicationGreedyPolicy TRGreedyPolicy;
+typedef float TBfractionRGreedyPolicy;
+
+void *createReplicationGreedyPolicy(void *entry);
+//
 
 
 

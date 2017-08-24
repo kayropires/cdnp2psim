@@ -7,14 +7,17 @@ typedef struct link TLink;
 // Policy related data/function definition
 typedef struct _data_FROMFILEPolicy TDATAFROMFILEPolicy;
 typedef int TlmLinkRatesFROMFILEPolicy;
+typedef long int	TPositionFromFile;
 typedef FILE TFpRatesFROMFILEPolicy;
 
 typedef struct FROMFILEPolicy TFROMFILEPolicy;
-void *createFROMFILEPolicy(void *entry);
+void *createRatesFROMFILEPolicy(void *entry);
+void *createSingletonRatesFromFilePolicy(void *entry);
 
 
 short updateFROMFILEPolicy(TLink *link);
 int getLmRatesFROMFILEPolicy(TLink *link);
+long int getPositionRatesFronFilePolicy(TLink *link);
 float getNextRateFROMFILEPolicy(TLink *link);
 void setAverageThroughputFROMFILEPolicy(TLink *link, float lastRate, float newRate);
 
@@ -84,6 +87,8 @@ typedef struct GeneralLinkPolicy TGeneralLinkPolicy;
 
 typedef short (* TLMUpdateGeneralPolicy)(TLink *link);
 typedef int (* TLMGetLmRatesGeneralPolicy)(TLink *link);
+typedef long int (* TLMGetPositionFromFileGeneralPolicy)(TLink *link);
+
 typedef float (* TLMGetNextRateGeneralPolicy)(TLink *link);
 typedef void (* TLMSetAverageThroughputGeneralPolicy)(TLink *link, float lastRate, float newRate);
 
@@ -94,6 +99,7 @@ struct LMGeneralPolicy{
 
 	TLMUpdateGeneralPolicy Update; // Object Management Policy Update
 	TLMGetLmRatesGeneralPolicy getLmLinkRates;
+	TLMGetPositionFromFileGeneralPolicy getPositionFromFile;
 	TLMGetNextRateGeneralPolicy getNextRate;
 };
 
@@ -122,6 +128,7 @@ typedef FILE* TFpTimeForFluctuationFROMFILEPolicy;
 typedef struct FLUCTUATIONFROMFILEPolicy TFLUCTUATIONFROMFILEPolicy;
 
 void *createFluctuationFROMFILEPolicy(void *entry);
+void *createSingletonFluctuationFROMFILEPolicy(void *entry);
 
 
 short updateFluctuationFROMFILEPolicy(TFluctuation *fluctuation);

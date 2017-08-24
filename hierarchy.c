@@ -11,14 +11,14 @@
 #include "internals.h"
 
 static short insertHCache(THCache *hc, int levels, void *object, void* systemData); //@ parametro: levels=nivel a ser acessado
-void putCacheInHCache(THCache *hc, int levels,TCache* cache);
+void putCacheInHCache(THCache *hc, int levels,void *vcache);
 static short updateHCache(THCache *hc, int levels, void *object,void* systemData);
 static short isCacheableHCache(THCache *hc, int levels,void *object, void* systemData);
 static void *hasHCache(THCache *hc, void *object);
 static short disposeHCache(THCache *hc, int levels);
 static void showHCache(THCache *hc, int levels);
-static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
-static void* searchBiggerVersionHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd);
+static void* searchObjectHCache(THCache* hc, void *vObject, int levelInit, int levelEnd);
+static void* searchBiggerVersionHCache(THCache* hc, void *vObject, int levelInit, int levelEnd);
 
 
 
@@ -114,8 +114,9 @@ static short insertHCache(THCache *hc, int levels, void *object, void *systemDat
 }
 
 //@ poe a cache na hierarquia
-void putCacheInHCache(THCache *hc, int levels,TCache* cache){
+void putCacheInHCache(THCache *hc, int levels,void *vcache){
 
+	TCache* cache=vcache;
 	TDataHCache *data = hc->data;
 	data->hcache[levels]=cache;
 }
@@ -145,7 +146,8 @@ static void showHCache(THCache *hc, int levels ){//Modificar para mostrar o cont
 	TDataHCache *data = hc->data;
 	TCache *cache;
 	TListObject *listObject;
-	int i,lprincipal=hc->getLevelPrincipal;
+	int i;
+	//lprincipal=hc->getLevelPrincipal;
 
 	if(levels!=-1){
 		cache=data->hcache[levels];
@@ -157,7 +159,7 @@ static void showHCache(THCache *hc, int levels ){//Modificar para mostrar o cont
 
 	}else{
 
-		for(i=0;i<lprincipal;i++){
+		for(i=0;i<hc->getLevels(hc);i++){
 			printf("\n");
 			printf("Objects in level %d of the memory hierarchy	\n",i);
 			cache=data->hcache[i];
@@ -271,7 +273,7 @@ static void* getStatsHCache(THCache *hc, int levels ){
 	return cache->getStats(cache);
 }
 
-static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, int levelEnd){ //@
+static void* searchObjectHCache(THCache* hc, void *vObject, int levelInit, int levelEnd){ //@
 
 	TCache *cache;
 	TObject *object = vObject;
@@ -301,12 +303,13 @@ static void* searchObjectHCache(THCache* hc, TObject *vObject, int levelInit, in
 	return storedObject;
 }
 
-static void *searchBiggerVersionHCache(THCache *hc, TObject *object, int levelInit, int levelEnd){ //@
+static void *searchBiggerVersionHCache(THCache *hc, void *vObject , int levelInit, int levelEnd){ //@
 
 	TCache *cache;
 	int i,bigger=0;
 	TObject *storedObject=NULL, *auxObject;
 	TListObject *listObject;
+	TObject *object=vObject;
 	auxObject=object;
 
 	i=levelInit;

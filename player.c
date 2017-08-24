@@ -27,10 +27,10 @@
 #include "channel.h"
 
 //prototipos de funcoes Player
-static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommunity* community, TSystemInfo* systemData);
-static void *schedulingWindow(TPeer *peer, void *video, void *listPeer,void **picked);
+static void processBuffering(unsigned int idPeer, void* vhashTable, void* vcommunity, void* vsystemData);
+static void *schedulingWindow(void *vpeer, void *video, void *listPeer,void **picked);
 //static float playbackWindow(TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData);
-static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData);
+static float playbackWindow(void *vcommunity, TPlayer *player,void* vhashTable, void *vpeer,void* vsystemData);
 static short stallPlayback(TPlayer *player);
 static void setStatusPlayer(TPlayer *player, TStatusPlayer statusPlayer);
 static TStatusPlayer getStatusPlayer(TPlayer *player);
@@ -38,13 +38,16 @@ static void setStorageWindow(TWindow *window, short storage);
 static short swapStorageSwindow(TPlayer *player);
 static short getLevelStorageWindow(TWindow *window);
 //static float calcDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes);
-static float calcDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes,TPeer *serverPeer);
-static float calcDownTimeChunkFromServer(TPeer *peer, TPlayer *player, float lengthBytes);
-static long int getCollectionLength(TDataSource *dataSource);
+static float calcDownTimeChunkFromServerPeer(void *vpeer, TPlayer *player, float lengthBytes,void *vserverPeer);
+static float calcDownTimeChunkFromServer(void *vpeer, TPlayer *player, float lengthBytes);
+static float calcUpTimeChunkFromPeer(void *vpeer, TPlayer *player, float lengthBytes);
+static float calcDownTimeChunkAverageThroughputFromServer(void *vpeer, TPlayer *player, float lengthBytes);
+static float calcUpTimeChunkAverageThroughputFromPeer(void *vpeer, TPlayer *player, float lengthBytes);
+static long int getCollectionLength(void *vdataSource);
 
 
 ////prototipos de funcoes Window
-static void *schedulingChunk(TPeer *peer, void *video, void *listPeer,void **picked);
+static void *schedulingChunk(void *peer, void *video, void *listPeer,void **picked);
 static void setOccupancyWindow(TWindow *window, float lenghtObject);
 static void setOccupBufferWindow(TWindow *window, float lenghtObject);
 static void setPlaybackedTimeWindow(TWindow *window, float lenghtObject);
@@ -68,6 +71,7 @@ static TOccupancyWindow getOccupancyWindow(TWindow *window);
 static TBufferWindow getBufferWindow(TWindow *window);
 static TOccupBufferWindow getOccupBufferWindow(TWindow *window);
 static unsigned int getNumberOfStoredObjectWindow(TWindow *window);
+static void *getPolicyWindow(TWindow *window);
 static void showWindow(TWindow *window);
 static short hasWindow(TWindow *window, void *object);
 static TAvailabilityWindow getAvailabilityWindow(TWindow *window);
@@ -190,6 +194,7 @@ TWindow *createWindow(TSizeWindow size, TSchedulingPolicy *policy ){
 	window->getPlaybackedTime = getPlaybackedTimeWindow;
 	window->getRemainingPlayingTime = getRemainingPlayingTimeWindow;
 	window->getNumberOfStoredObject = getNumberOfStoredObjectWindow;
+	window->getPolicy = getPolicyWindow;
 
 	//sets
 	window->setStorage = setStorageWindow;
@@ -221,8 +226,12 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 	player->stall = stallPlayback;
 	player->swapStorage = swapStorageSwindow;
 	player->getWindow = getWindowPlayer;
-	player->calcDownTime = calcDownTimeChunk;
+	player->calcDownTimeFromPeer = calcDownTimeChunkFromServerPeer;
 	player->calcDownTimeFromServer = calcDownTimeChunkFromServer;
+	player->calcUpTimeAverageThroughputFromPeer = calcUpTimeChunkAverageThroughputFromPeer;
+	player->calcDownTimeAverageThroughputFromServer = calcDownTimeChunkAverageThroughputFromServer;
+
+	player->calcUpTimeFromPeer = calcUpTimeChunkFromPeer;
 	player->getCollectionLength = getCollectionLength;
 
 	return player;
@@ -230,8 +239,11 @@ TPlayer *createPlayer(TSizeWindow size, TSchedulingPolicy *policy ){
 }
 
 //Functions Player
+static void processBuffering(unsigned int idPeer, void* vhashTable, void* vcommunity, void* vsystemData){
 
-static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommunity* community, TSystemInfo* systemData){
+	THashTable* hashTable = vhashTable;
+	TCommunity* community = vcommunity;
+	TSystemInfo* systemData = vsystemData;
 	TObject *video;
 	TListObject *listEvicted;
 	TDataSource *dataSource;
@@ -239,9 +251,9 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 	TIdObject idVideo;
 	TPlayer *player;
 	TWindow *window;
-	int version=6;
+	int version=3;
 	long int segment=0;
-	float buffer=0, occupBuffer;
+	float buffer=0;
 	short lStorage;
 
 	TPeer *peer = community->getPeer(community, idPeer);
@@ -266,7 +278,7 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 			item->dispose(item);
 
 			// updating hash table due to evicting that made room for the cached video
-			listEvicted = peer->getEvictedCache(peer);
+			listEvicted = peer->getEvictedCache(peer,lStorage);
 			hashTable->removeEvictedItens(hashTable, idPeer, listEvicted);
 
 			window->setOccupBuffer(window, getLengthObject(video));
@@ -282,8 +294,9 @@ static void processBuffering(unsigned int idPeer, THashTable* hashTable, TCommun
 	}
 }
 
-static void *schedulingWindow(TPeer *peer, void *video, void *listPeer,void **picked){
+static void *schedulingWindow(void *vpeer, void *video, void *listPeer,void **picked){
 
+	TPeer *peer =vpeer;
 	TPlayer *player;
 	TWindow *window;
 	TPeer *ServerPeer;
@@ -297,8 +310,14 @@ static void *schedulingWindow(TPeer *peer, void *video, void *listPeer,void **pi
 
 
 
-static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* hashTable, TPeer *peer,TSystemInfo* systemData){
+static float playbackWindow(void *vcommunity, TPlayer *player,void* vhashTable, void *vpeer,void* vsystemData){
 
+
+
+	TCommunity *community = vcommunity ;
+	THashTable* hashTable=vhashTable;
+	TPeer *peer=vpeer;
+	TSystemInfo* systemData=vsystemData;
 
 	TDataSource *dataSource;
 	THCache *hc;
@@ -327,7 +346,7 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 
 		while(i<levelEnd){
 
-			if( i != levelReplicate){
+			//if( i != levelReplicate){
 
 				cache=hc->getCache(hc,i);
 				listObject = cache->getObjects(cache);
@@ -347,7 +366,7 @@ static float playbackWindow(TCommunity *community, TPlayer *player,THashTable* h
 						}
 					}
 				}
-			}
+			//}
 			i++;
 
 
@@ -431,10 +450,12 @@ static TWindow *getWindowPlayer(TPlayer *player){
 }*/
 
 
-static float calcDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes,TPeer *serverPeer){
+static float calcDownTimeChunkFromServerPeer(void *vpeer, TPlayer *player, float lengthBytes,void *vserverPeer){
 
-	TWindow *window = player->getWindow(player);
+	//TWindow *window = player->getWindow(player);
 
+	TPeer *serverPeer=vserverPeer;
+	TPeer *peer=vpeer;
 	TChannel *channel, *channelServer;
 	TLink *downLink, *upLinkServerPeer;
 	float currentDownRatePeer,currentUpRateServerPeer ,downRate, downTime ;
@@ -462,10 +483,11 @@ static float calcDownTimeChunk(TPeer *peer, TPlayer *player, float lengthBytes,T
 		return downTime;
 }
 //
-static float calcDownTimeChunkFromServer(TPeer *peer, TPlayer *player, float lengthBytes){
+static float calcDownTimeChunkFromServer(void *vpeer, TPlayer *player, float lengthBytes){
 
-	TWindow *window = player->getWindow(player);
+	//TWindow *window = player->getWindow(player);
 
+	TPeer *peer=vpeer;
 	TChannel *channel;
 	TLink *downLink;
 	float currentDownRatePeer, downTime ;
@@ -480,27 +502,88 @@ static float calcDownTimeChunkFromServer(TPeer *peer, TPlayer *player, float len
 		return downTime;
 }
 
+//
+static float calcUpTimeChunkFromPeer(void *vpeer, TPlayer *player, float lengthBytes){
+
+	//TWindow *window = player->getWindow(player);
+
+	TPeer *peer=vpeer;
+	TChannel *channel;
+	TLink *upLink;
+	float currentUpRatePeer, upTime ;
 
 
+		channel = peer->getChannel(peer);
+		upLink = channel->getUpLink(channel);
+		currentUpRatePeer = upLink->getCurrentRate(upLink);
 
+		upTime = (lengthBytes/1000)/currentUpRatePeer;
 
+		return upTime;
+}
 
-
-
-
-
-static long int getCollectionLength(TDataSource *dataSource){
+static long int getCollectionLength(void *vdataSource){
 	//getCollectionLengthDataSource(dataSource);
+	TDataSource *dataSource=vdataSource;
 
-		return getCollectionLengthDataSource(dataSource);
+		return dataSource->getCollectionLength(dataSource);
+}
+
+static float calcDownTimeChunkAverageThroughputFromServer(void *vpeer, TPlayer *player, float lengthBytes){
+
+	//TWindow *window = player->getWindow(player);
+
+	TPeer *peer=vpeer;
+	TChannel *channel;
+	TLink *downLink;
+	float averageDownRatePeer, downTime ;
+
+
+		channel = peer->getChannel(peer);
+		downLink = channel->getDownLink(channel);
+		averageDownRatePeer = downLink->getAverageThroughput(downLink);
+
+		if(averageDownRatePeer!=0){
+		downTime = (lengthBytes/1000)/averageDownRatePeer;
+		}else{
+		downTime = (lengthBytes/1000)/downLink->getCurrentRate(downLink);
+		}
+
+		return downTime;
+}
+
+static float calcUpTimeChunkAverageThroughputFromPeer(void *vpeer, TPlayer *player, float lengthBytes){
+
+	//TWindow *window = player->getWindow(player);
+
+	TPeer *peer=vpeer;
+	TChannel *channel;
+	TLink *upLink;
+	float averageUpRatePeer, upTime ;
+
+
+		channel = peer->getChannel(peer);
+		upLink = channel->getUpLink(channel);
+		averageUpRatePeer = upLink->getAverageThroughput(upLink);
+
+		//upTime = (lengthBytes/1000)/averageUpRatePeer;
+		if(averageUpRatePeer!=0){
+			upTime = (lengthBytes/1000)/averageUpRatePeer;
+		}else{
+			upTime = (lengthBytes/1000)/upLink->getCurrentRate(upLink);
+
+		}
+
+		return upTime;
 }
 
 
 
 //funcoes window
 
-static void *schedulingChunk(TPeer *peer, void *video, void *listPeer,void **picked){
+static void *schedulingChunk(void *vpeer, void *video, void *listPeer,void **picked){
 	TPeer *p;
+	TPeer *peer=vpeer;
 	TPlayer *player;
 	TWindow *window;
 
@@ -510,7 +593,7 @@ static void *schedulingChunk(TPeer *peer, void *video, void *listPeer,void **pic
 		TGeneralPolicySwm *policy = data->policy;
 
 
-		p = policy->SWM->Replace(peer,video,listPeer, picked,policy);
+		p = policy->SWM->schedule(peer,video,listPeer, picked,policy);
 
 
 
@@ -729,12 +812,18 @@ static float getRemainingPlayingTimeWindow(TWindow *window){
 
 //
 static unsigned int getNumberOfStoredObjectWindow(TWindow *window){
-	TDataWindow *data = window->data;
+	//TDataWindow *data = window->data;
 
-	unsigned int numberOfStoredObjectSwindow;
+	unsigned int numberOfStoredObjectSwindow=0;
 
 	return numberOfStoredObjectSwindow;
 }
+
+static void *getPolicyWindow(TWindow *window){
+	TDataWindow *data = window->data;
+	return data->policy;
+}
+
 
 
 // Políticas de escalonamento
@@ -823,7 +912,7 @@ void *replaceGreedyPolicy(void *vpeer, void *video, void *vlistPeers, void **vpi
 		auxPicked = candidateServer->hasCachedBiggerVersion(candidateServer,video);
 		fitsInWindow = policy->SWM->FitsInSwindow(player,auxPicked);
 		lengthBytesAux = getLengthBytesObject(auxPicked);
-		downTime = player->calcDownTime(peer,player,lengthBytesAux,candidateServer);
+		downTime = player->calcDownTimeFromPeer(peer,player,lengthBytesAux,candidateServer);
 		remainingPlayingTime = window->getRemainingPlayingTime(window);
 
 		if((fitsInWindow == 1) && (remainingPlayingTime > downTime) && (lengthBytesAux > lengthBytes)){
@@ -1049,7 +1138,7 @@ void setOccupDeltaTimeAdaptPolicy(float downTimeLastChunk,float instantFlowLastC
 
 
 void updateAverageFlowAdaptPolicy(float instantFlow,TDATAAdaptPolicy *data){
-	float averageFlow;
+	//float averageFlow;
 
 	data->instantFlow = instantFlow;
 	if( data->averageFlow > 0){
@@ -1063,13 +1152,7 @@ int moderateAdaptPolicy(float currentBufferLevel, int ri, int fRi, TDATAAdaptPol
 
 	int rProx;
 
-	float instantFlow, averageFlow;
-
-	//freqRi in window ok
-	//window->getFreqRi ok
-	//criar campos para guardar frequencia de representações na janela ok
-	//falta obter a vazão media e vazão instantanea
-
+	//float instantFlow, averageFlow;
 
 	if(currentBufferLevel > data->bLow && currentBufferLevel < data->bMax){
 		if(data->averageFlow*data->factorC > fRi && ri < data->rMax){
@@ -1146,7 +1229,7 @@ void *replaceAdaptPolicy(void *vpeer, void *video, void *vlistPeers, void **vpic
 
 			fitsInWindow = policy->SWM->FitsInSwindow(player,videoFound);
 			lengthBytesAux = getLengthBytesObject(videoFound);
-			downTime = player->calcDownTime(peer,player,lengthBytesAux,candidateServer);
+			downTime = player->calcDownTimeFromPeer(peer,player,lengthBytesAux,candidateServer);
 			remainingPlayingTime = window->getRemainingPlayingTime(window);
 
 			if(fitsInWindow == 1 && (remainingPlayingTime > downTime) ){

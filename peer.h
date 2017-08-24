@@ -99,7 +99,7 @@ typedef void (* TSetTierPeer)(TPeer *peer, short tier);
 typedef short (*TGetTierPeer)(TPeer *peer);
 typedef void (*TUpdateCachePeer)(TPeer *peer, void *vObject, void *vSystemData);
 typedef short (*TInsertCachePeer)(TPeer *peer, void *vObject, void *vSystemData, int levels);
-typedef void *(*TGetEvictedCachePeer)(TPeer *peer);
+typedef void *(*TGetEvictedCachePeer)(TPeer *peer, int levels);
 
 typedef void *(*TGetProfilePeer)(TPeer *peer);
 typedef float (*TRunProfilePolicyPeer)(TPeer *peer, void *profile);
@@ -109,7 +109,7 @@ typedef void (*TUpdateRequestsMapQueryPeer)(TPeer *peer, unsigned int idSource, 
 typedef void (*TUpdateHitsMapQueryPeer)(TPeer *peer, unsigned int idSource, short hops);
 typedef void (*TShowMapQueryPeer)(TPeer *peer);
 typedef void (*TShowChannelsInfoPeer)(TPeer *peer);
-typedef void* (*TSchedulingWindowPeer)(TPeer *peer, void *video, void* listPeer,void *picked);
+typedef void* (*TSchedulingWindowPeer)(TPeer *peer, void *video, void* listPeer,void **picked);
 
 
 TPeer* createPeer(unsigned int id, short tier, void *pickDataOnSessionDynamic, void *pickDataOffSessionDynamic, void *pickDataRequest, void *dataSource, void *replicate, void *cache, void *topologyManager, void *channel);

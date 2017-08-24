@@ -918,7 +918,7 @@ struct _dataFromFileRandomic{
 };
 
 TPickedRandomic pickFromFileRandomic(TRandomic *randomic);
-void resetFromFileRandomic(TRandomic *randomic);
+void resetFromFileRandomic(TRandomic *randomic,char *entry);
 TPickedRandomic getLastPickedFromFileRandomic(TRandomic *randomic);
 void disposeFromFileRandomic(TRandomic *randomic);
 
@@ -991,7 +991,7 @@ TPickedRandomic pickAdaptiveRandomic(TRandomic *randomic, int version, long int 
 
 
 // reset
-void resetFromFileRandomic(TRandomic *randomic){
+void resetFromFileRandomic(TRandomic *randomic, char *entry){
     TDataRandomic *p = (TDataRandomic *)randomic->data;
     TDataFromFileRandomic *pars = (TDataFromFileRandomic *)p->pars;
     	fseek(pars->fp, 0L, SEEK_SET);

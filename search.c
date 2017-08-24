@@ -266,7 +266,7 @@ static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, u
 
 	short found = 0;
 	int i, occup;
-	int levelInit, levelEnd;
+	int levelInit=0, levelEnd;
 	unsigned int level=0, 	idPeer = peer->getId(peer), idSource = idPeer;
 	int idRequester = -1;
 
@@ -280,7 +280,9 @@ static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, u
 	idRequester = peer->getId(peer);
 	occup = neighbors->getOccupancy(neighbors);
 
-	for(i=0;i<occup;i++){  // BFS on neighborhood
+	//for(i=0;i<occup;i++){  // BFS on neighborhood
+	i=0;
+	while(i<occup){
 
 		peer = neighbors->getElement(neighbors,i);
 		idPeer = peer->getId(peer);
@@ -292,7 +294,7 @@ static void* runNeighborhoodSearch(TSearch *search, void* vPeer, void* object, u
 					listPeers->insert(listPeers,idPeer,peer);
 					found++;
 				}
-
+				i++;
 	}
 	return listPeers;
 }

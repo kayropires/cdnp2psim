@@ -21,15 +21,15 @@ typedef short (* TUpdateHCache)(THCache *hc, int levels, void *object, void *Sys
 typedef short (* TInsertHCache)(THCache *hc, int levels, void *object, void *SystemData);
 typedef void (* TPutCacheInHCache)(THCache *hc, int levels,void* cache);
 
-typedef short (* TIsHCacheableHCache)(THCache *hc, void *object, void *SystemData);
+typedef short (* TIsHCacheableHCache)(THCache *hc,int leves, void *object, void *SystemData);
 typedef void* (* THasHCache)(THCache *hc, void *object);
-typedef short (* TDisposeHCache)(THCache* hc);
-typedef void (* TShowHCache)(THCache* hc);
+typedef short (* TDisposeHCache)(THCache* hc, int levels);
+typedef void (* TShowHCache)(THCache* hc, int levels);
 typedef void* (*TSearchHCache)(THCache* hc, void *vObject, int levelInit, int levelEnd);
 typedef void* (*TSearchBiggerVersionHCache)(THCache* hc, void *vObject, int levelInit, int levelEnd);
 
-typedef TAvailabilityHCache (* TGetAvailabilityHCache)(THCache* hc);
-typedef TSizeHCache (* TGetSizeHCache)(THCache* hc);
+typedef TAvailabilityHCache (* TGetAvailabilityHCache)(THCache* hc, int levels);
+typedef float (* TGetSizeHCache)(THCache* hc,int levels);
 typedef void* (* TGetStatsHCache)(THCache* hc, int levels);//
 typedef void (* TShowStatsHCache)(THCache* hc, int levels);
 typedef void* (* TGetDisposedObjectsHCache)(THCache* hc, int levels);
@@ -40,8 +40,8 @@ typedef int (* TGetLevelPrincipalHCache)(THCache* hc);
 typedef int (* TGetLevelReplicateHCache)(THCache* hc);
 typedef int (* TGetLevelStorageHCache)(THCache* hc);
 
-typedef TOccupancyHCache (* TGetOccupancyHCache)(THCache *hc);
-typedef void (* TAddAvailabilityHCache)(THCache* hc, TAvailabilityHCache amount);
+typedef TOccupancyHCache (* TGetOccupancyHCache)(THCache *hc, int levels);
+typedef void (* TAddAvailabilityHCache)(THCache* hc,int levels, TAvailabilityHCache amount);
 
 typedef unsigned int (* TGetNumberOfStoredObjectHCache)(THCache* hc, int levels);
 

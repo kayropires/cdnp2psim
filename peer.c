@@ -836,7 +836,8 @@ static void *hasCachedPeer(TPeer* peer, void *object){
 }
 
 //
-static void *hasCachedBiggerVersionPeer(TPeer *peer, TObject *object){
+static void *hasCachedBiggerVersionPeer(TPeer *peer, void *vobject){
+	TObject *object=vobject;
 	TDataPeer *data = peer->data;
 	THCache *hc = data->hc;
 	int levelInit=0, levelEnd=hc->getLevels(hc);
@@ -1005,7 +1006,7 @@ static void showChannelsInfoPeer(TPeer* peer){
 }
 
 
-TPeer* schedulingWindowPeer(TPeer* peer, void *video,void* listPeer, TObject **picked){
+void* schedulingWindowPeer(TPeer* peer, void *video,void* listPeer, void **picked){
 	TPlayer *player;
 	TPeer *ServerPeer;
 	player=peer->getPlayer(peer);
