@@ -563,7 +563,7 @@ void runSimulator(float SimTime, unsigned int warmupTime, unsigned int scale, TP
 		event = queue->dequeue(queue);
 		eventCount++;
 
-		//printf(" Clock: %0.2f\n",clock);
+		printf(" Clock: %0.3f\n",clock);
 		if (!event){
 			fprintf(stderr,"ERROR: simulator.c: run out of events\n");
 			exit(0);
