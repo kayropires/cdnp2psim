@@ -58,7 +58,7 @@ TArrayDynamic *createArrayDynamic(int);
 
 
 typedef struct priority_queue TPriorityQueue;
-typedef void (*TEnqueuePriorityQueue)(TPriorityQueue *pq, unsigned long int key, void *item);
+typedef void (*TEnqueuePriorityQueue)(TPriorityQueue *pq, float key, void *item);
 typedef void* (* TDequeuePriorityQueue)(TPriorityQueue *pq);
 typedef void* (* TFirstPriorityQueue)(TPriorityQueue *pq);
 typedef void (* TUFreePriorityQueue)(TPriorityQueue *pq);

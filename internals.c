@@ -686,11 +686,11 @@ TArrayDynamic *createArrayDynamic( int size ){
 
 typedef struct elem_priority_queue TElemPriorityQueue;
 struct elem_priority_queue{
-	unsigned long int key;
+	float key;
 	void *item;
 };
 
-typedef short (* TComparePriorityQueue)(unsigned long int, unsigned long int);
+typedef short (* TComparePriorityQueue)(float, float);
 typedef struct _data_priority_queue TDataPriorityQueue;
 struct _data_priority_queue{
 	TElemPriorityQueue *element;
@@ -711,11 +711,12 @@ static void *firstPriorityQueue(TPriorityQueue *pq){
 		return NULL;
 }
 
-static short compareMinimumPriorityQueue(unsigned long int k1, unsigned long int k2){
+//09_05
+static short compareMinimumPriorityQueue(float k1, float k2){
 	return (k1>k2);
 }
 
-static short compareMaximumPriorityQueue(unsigned long int k1, unsigned long int k2){
+static short compareMaximumPriorityQueue(float k1, float k2){
 	return (k1<k2);
 }
 
@@ -746,7 +747,7 @@ static void orderPriorityQueue(TPriorityQueue *pq, unsigned int i){
 		if ( (left < data->occupancy) && data->compareOrd(data->element[left].key, data->element[ord].key) ){
 			ord = left;
 		}
-		if ( (right<data->occupancy) && data->compareOrd(data->element[right].key, data->element[ord].key) ){
+		if ( (right< data->occupancy) && data->compareOrd(data->element[right].key, data->element[ord].key) ){
 			ord = right;
 		}
 
@@ -758,7 +759,7 @@ static void orderPriorityQueue(TPriorityQueue *pq, unsigned int i){
 	} while(continuing);
 }
 
-static void enqueuePriorityQueue(TPriorityQueue *pq, unsigned long int key, void *item){
+static void enqueuePriorityQueue(TPriorityQueue *pq, float key, void *item){
 	TDataPriorityQueue *data = pq->data;
 
 	if (data->occupancy == data->size){
